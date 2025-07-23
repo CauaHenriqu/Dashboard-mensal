@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Monitoramento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="public/css/style.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#D80D0D',
+                        secondary: '#F3F4F6',
+                        dark: '#111827',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-secondary dark:bg-gray-900 font-sans antialiased">
+    <!-- Header Fixo -->
+    <header class="sticky top-0 z-30 bg-white dark:bg-gray-800 shadow-md dark:shadow-gray-700">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <button id="sidebarToggle" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <img src="public/images/logo.png" alt="Company Logo" class="h-10">
+                <h1 class="text-xl md:text-2xl font-bold text-dark dark:text-white">Dashboard de Monitoramento</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
+                    <i id="theme-toggle-dark-icon" class="fas fa-moon hidden"></i>
+                    <i id="theme-toggle-light-icon" class="fas fa-sun hidden"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Container Principal com Layout Flex -->
+    <div class="flex flex-col lg:flex-row">
+        
+        <!-- Barra Lateral -->
+        <aside id="sidebar" class="w-80 flex-shrink-0 bg-white dark:bg-gray-800 p-6 shadow-lg sticky top-[76px] h-[calc(100vh-76px)] overflow-y-auto">
+            <nav class="space-y-2">
+                <a href="/index.html" class="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-chart-pie mr-3"></i>
+                    Dashboard de Entregas
+                </a>
+                <a href="/dashboard-monitoramento.html" class="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 bg-gray-100 dark:bg-gray-700">
+                    <i class="fas fa-desktop mr-3"></i>
+                    Dashboard de Monitoramento
+                </a>
+            </nav>
+            <hr class="my-4 border-gray-200 dark:border-gray-700">
+            
+            <!-- Filtros -->
+            <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Filtros</h3>
+            <div id="filtersContainer" class="space-y-4">
+               <!-- Filters will be dynamically populated by JS -->
+            </div>
+            <button id="applyFiltersBtn" class="mt-4 w-full bg-primary hover:bg-red-700 text-white px-10 py-2 rounded-lg transition duration-300">
+               Aplicar Filtros
+           </button>
+
+            <hr class="my-4 border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Período (selecione um ou mais)</h3>
+            <div id="historyContainer" class="space-y-2">
+                <!-- Histórico será populado pelo JS -->
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-800 px-4 py-3 flex items-center justify-between sm:px-6 border-t border-gray-200 dark:border-gray-700">
+               <div class="flex-1 flex justify-between sm:hidden">
+                   <button id="historyPrevBtnMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                       Anterior
+                   </button>
+                   <button id="historyNextBtnMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                       Próxima
+                   </button>
+               </div>
+               <div class="hidden sm:flex-1 sm:flex sm:flex-wrap sm:items-center sm:justify-center md:justify-between gap-2">
+                   <div>
+                       <p id="historyPaginationSummary" class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                           Mostrando
+                           <span class="font-medium">0</span>
+                           a
+                           <span class="font-medium">0</span>
+                           de
+                           <span class="font-medium">0</span>
+                           resultados
+                       </p>
+                   </div>
+                   <div>
+                       <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                           <button id="historyPrevBtnDesktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                               <span class="sr-only">Anterior</span>
+                               <i class="fas fa-chevron-left"></i>
+                           </button>
+                           <div id="historyPaginationLinks" class="flex">
+                               <!-- Page links will be inserted here -->
+                           </div>
+                           <button id="historyNextBtnDesktop" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                               <span class="sr-only">Próxima</span>
+                               <i class="fas fa-chevron-right"></i>
+                           </button>
+                       </nav>
+                   </div>
+               </div>
+           </div>
+        </aside>
+
+        <!-- Área de Conteúdo Principal -->
+        <main class="flex-1 p-6 min-w-0">
+            <!-- Seção de Input -->
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md mb-8">
+                <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Gerar Novo Relatório</h3>
+                <textarea id="textInput" class="w-full h-40 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 dark:text-white" placeholder="Cole o texto bruto aqui..."></textarea>
+                <button id="generateBtn" class="mt-4 bg-primary hover:bg-red-700 text-white px-6 py-2 rounded-lg transition duration-300">
+                    Gerar Relatório
+                </button>
+            </div>
+
+            <!-- Seção do Dashboard (Tabela e Gráficos) -->
+            <div id="dashboardContent" class="hidden">
+                <!-- Tabela de Dados -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-700 overflow-hidden mb-8">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-dark dark:text-white">Dados do Monitoramento</h3>
+                        <button id="printTableBtn" class="bg-primary hover:bg-red-700 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center space-x-2">
+                            <i class="fas fa-print"></i>
+                            <span>Imprimir</span>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead id="tableHeader" class="bg-gray-50 dark:bg-gray-700">
+                                <!-- Cabeçalho da tabela será gerado pelo JS -->
+                            </thead>
+                            <tbody id="tableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <!-- Corpo da tabela será gerado pelo JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Entregas por Motorista</h3>
+                        <div class="h-80"><canvas id="motoristaChart"></canvas></div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Entregas por Destino</h3>
+                        <div class="h-80"><canvas id="destinoChart"></canvas></div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md lg:col-span-2 xl:col-span-1">
+                        <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Entregas por Data de Início</h3>
+                        <div class="h-80"><canvas id="dataInicioChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+   <footer class="relative bg-[#b30b0b] text-[#f1f1f1] pt-20 pb-10">
+        <!-- Wave shape divider -->
+        <div class="wave-shape">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+            </svg>
+        </div>
+        <div class="container mx-auto px-4">
+            <!-- Footer content... -->
+        </div>
+    </footer>
+    <script src="src/db.js"></script>
+    <script src="public/js/monitoramento.js"></script>
+  </body>
+  </html>

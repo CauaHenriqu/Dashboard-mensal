@@ -1,0 +1,129 @@
+/* scrollbar customizada */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D80D0D;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b30b0b;
+        }
+        
+        /* Animação dos cards */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-zoom-in {
+            animation: zoomIn 0.4s ease-out forwards;
+        }
+        
+        /* checkbox customizada */
+        .custom-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #D80D0D;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+        }
+        .custom-checkbox:checked {
+            background-color: #D80D0D;
+        }
+        .custom-checkbox:checked::after {
+            content: "✓";
+            color: #FFF;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+        }
+       .dropdown-checkbox-menu {
+           max-height: 200px;
+           overflow-y: auto;
+       }
+       .modal-overlay {
+           transition: opacity 0.3s ease;
+       }
+       .modal-content {
+           transition: transform 0.3s ease;
+       }
+
+       .wave-shape {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            line-height: 0;
+        }
+
+        .wave-shape svg {
+            position: relative;
+            display: block;
+            width: calc(100% + 1.3px);
+            height: 80px;
+        }
+
+        .wave-shape .shape-fill {
+            fill: #D80D0D;
+        }
+
+        @media (max-width: 767px) {
+            .wave-shape svg {
+                height: 40px;
+            }
+        }
+
+        .hover-scale {
+            transition: transform 0.3s ease;
+        }
+
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+
+        .footer-link {
+            position: relative;
+        }
+
+        .footer-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: #D80D0D;
+            transition: width 0.3s ease;
+        }
+
+        .footer-link:hover::after {
+            width: 100%;
+        }
+        
+        #sidebar {
+            transition: all 0.3s ease-in-out;
+        }
+        #sidebar.collapsed {
+            width: 0;
+            padding: 0;
+            transform: translateX(-100%);
+            opacity: 0;
+        }
