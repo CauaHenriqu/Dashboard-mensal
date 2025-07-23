@@ -209,10 +209,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateCharts(data) {
         if (deliveriesChart) {
-            const entregasPorMotorista = data.reduce((acc, row) => { if (row.motorista) acc[row.motorista] = (acc[row.motorista] || 0) + (Number(row.entregas) || 0); return acc; }, {});
-            deliveriesChart.data.labels = Object.keys(entregasPorMotorista);
-            deliveriesChart.data.datasets[0].data = Object.values(entregasPorMotorista);
-            deliveriesChart.update();
+    const entregasPorMotorista = data.reduce((acc, row) => {
+        if (row.motorista) acc[row.motorista] = (acc[row.motorista] || 0) + (Number(row.entregas) || 0);
+        return acc;
+    }, {});
+
+    // Obtenha os pares [motorista, entregas], ordene pelo valor (entregas)
+    const motoristasOrdenados = Object.entries(entregasPorMotorista)
+      .sort((a, b) => a[1] - b[1]); // crescente
+
+    // Atualize os dados do gráfico
+    deliveriesChart.data.labels = motoristasOrdenados.map(item => item[0]);
+    deliveriesChart.data.datasets[0].data = motoristasOrdenados.map(item => item[1]);
+    deliveriesChart.update();
+
         }
         if (volumeChart) {
             const volumePorDestino = data.reduce((acc, row) => { if (row.destino) acc[row.destino] = (acc[row.destino] || 0) + parseFormattedNumber(row.volumeM3); return acc; }, {});
@@ -589,15 +599,6 @@ document.addEventListener('DOMContentLoaded', () => {
             catch (error) { console.error("Falha ao zerar o banco de dados:", error); alert("Ocorreu um erro ao tentar zerar o banco de dados."); }
         }
     });
-
-    document.querySelectorAll('th[data-column]').forEach(th => {
-  th.addEventListener('click', function() {
-    const column = th.getAttribute('data-column');
-    sortState.column = column;
-    sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
-    renderTable(); // Função que re-renderiza a tabela ordenada
-  });
-});
 
     if (sidebar && sidebarToggle) sidebarToggle.addEventListener('click', (e) => { e.stopPropagation(); sidebar.classList.toggle('collapsed'); });
     
