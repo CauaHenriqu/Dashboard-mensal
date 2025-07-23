@@ -237,11 +237,19 @@ document.addEventListener('DOMContentLoaded', () => {
             valueChart.update();
         }
         if (helpersChart) {
-            const chamadosPorAjudante = data.reduce((acc, row) => { if (row.ajudante1) acc[row.ajudante1] = (acc[row.ajudante1] || 0) + 1; return acc; }, {});
-            helpersChart.data.labels = Object.keys(chamadosPorAjudante);
-            helpersChart.data.datasets[0].data = Object.values(chamadosPorAjudante);
-            helpersChart.update();
-        }
+    const chamadosPorAjudante = data.reduce((acc, row) => {
+        if (row.ajudante1) acc[row.ajudante1] = (acc[row.ajudante1] || 0) + 1;
+        return acc;
+    }, {});
+
+    // Ordena ajudantes pelo número de chamados (crescente)
+    const ajudantesOrdenados = Object.entries(chamadosPorAjudante)
+      .sort((a, b) => a[1] - b[1]); // crescente
+
+    helpersChart.data.labels = ajudantesOrdenados.map(item => item[0]);
+    helpersChart.data.datasets[0].data = ajudantesOrdenados.map(item => item[1]);
+    helpersChart.update();
+}
         if (filialChart) {
             const entregasPorFilial = data.reduce((acc, row) => { if (row.filialExpedicao) acc[row.filialExpedicao] = (acc[row.filialExpedicao] || 0) + (Number(row.entregas) || 0); return acc; }, {});
             filialChart.data.labels = Object.keys(entregasPorFilial);
