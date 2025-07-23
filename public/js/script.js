@@ -208,20 +208,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateCharts(data) {
-        if (deliveriesChart) {
-    const entregasPorMotorista = data.reduce((acc, row) => {
-        if (row.motorista) acc[row.motorista] = (acc[row.motorista] || 0) + (Number(row.entregas) || 0);
-        return acc;
-    }, {});
+    if (deliveriesChart) {
+        const entregasPorMotorista = data.reduce((acc, row) => {
+            if (row.motorista) acc[row.motorista] = (acc[row.motorista] || 0) + (Number(row.entregas) || 0);
+            return acc;
+        }, {});
 
-    // Obtenha os pares [motorista, entregas], ordene pelo valor (entregas)
-    const motoristasOrdenados = Object.entries(entregasPorMotorista)
-      .sort((a, b) => a[1] - b[1]); // crescente
+        // Obtenha os pares [motorista, entregas], ordene pelo valor (entregas)
+        const motoristasOrdenados = Object.entries(entregasPorMotorista)
+            .sort((a, b) => a[1] - b[1]); // crescente
 
-    // Atualize os dados do gráfico
-    deliveriesChart.data.labels = motoristasOrdenados.map(item => item[0]);
-    deliveriesChart.data.datasets[0].data = motoristasOrdenados.map(item => item[1]);
-    deliveriesChart.update();
+        // Atualize os dados do gráfico
+        deliveriesChart.data.labels = motoristasOrdenados.map(item => item[0]);
+        deliveriesChart.data.datasets[0].data = motoristasOrdenados.map(item => item[1]);
+
+        // Atualize as cores conforme o tema atual
+        const fontColor = document.documentElement.classList.contains('dark') ? '#ffffffff' : '#000000ff';
+        deliveriesChart.options.plugins.legend.labels.color = fontColor;
+        deliveriesChart.options.scales.x.ticks.color = fontColor;
+        deliveriesChart.options.scales.y.ticks.color = fontColor;
+
+        deliveriesChart.update();
 
         }
         if (volumeChart) {
@@ -632,6 +639,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (themeToggleBtn) {
         const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
         const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        const updateChartColors = chart => {
+    if (!chart) return;
+    const fontColor = document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827';
+    if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = fontColor;
+    if (chart.options.scales?.x?.ticks) chart.options.scales.x.ticks.color = fontColor;
+    if (chart.options.scales?.y?.ticks) chart.options.scales.y.ticks.color = fontColor;
+    chart.update();
+};
+
         const applyTheme = (theme) => {
             if (theme === 'dark') {
                 document.documentElement.classList.add('dark');
@@ -642,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (themeToggleDarkIcon) themeToggleDarkIcon.classList.remove('hidden');
                 if (themeToggleLightIcon) themeToggleLightIcon.classList.add('hidden');
             }
-            [deliveriesChart, helpersChart, volumeChart, valueChart, filialChart].forEach(chart => { if (chart) chart.update(); });
+            [deliveriesChart, helpersChart, volumeChart, valueChart, filialChart].forEach(updateChartColors);
         };
         const preferredTheme = localStorage.getItem('color-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         applyTheme(preferredTheme);
