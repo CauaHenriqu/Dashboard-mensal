@@ -590,6 +590,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.querySelectorAll('th[data-column]').forEach(th => {
+  th.addEventListener('click', function() {
+    const column = th.getAttribute('data-column');
+    sortState.column = column;
+    sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+    renderTable(); // Função que re-renderiza a tabela ordenada
+  });
+});
+
     if (sidebar && sidebarToggle) sidebarToggle.addEventListener('click', (e) => { e.stopPropagation(); sidebar.classList.toggle('collapsed'); });
     
     document.addEventListener('click', (e) => {
