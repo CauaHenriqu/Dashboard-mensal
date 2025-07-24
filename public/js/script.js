@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const getChartFontColor = () => document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827';
     const getChartGridColor = () => document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
-    
+
     const commonChartOptions = {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { labels: { color: getChartFontColor(), font: { size: 10 } } } },
@@ -179,8 +179,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary" data-field="cargaERP">${row.cargaERP || ''}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-field="entregas">${row.entregas || ''}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-field="pedidos">${row.pedidos || ''}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-field="pesoKG">${parseFormattedNumber(row.pesoKG).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-field="volumeM3">${parseFormattedNumber(row.volumeM3).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-field="pesoKG">${parseFormattedNumber(row.pesoKG).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-field="volumeM3">${parseFormattedNumber(row.volumeM3).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-field="valorRS">${parseFormattedNumber(row.valorRS).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-field="destino">${row.destino || ''}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" data-field="motorista">${row.motorista || ''}</td>
@@ -208,27 +208,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateCharts(data) {
-    if (deliveriesChart) {
-        const entregasPorMotorista = data.reduce((acc, row) => {
-            if (row.motorista) acc[row.motorista] = (acc[row.motorista] || 0) + (Number(row.entregas) || 0);
-            return acc;
-        }, {});
+        if (deliveriesChart) {
+            const entregasPorMotorista = data.reduce((acc, row) => {
+                if (row.motorista) acc[row.motorista] = (acc[row.motorista] || 0) + (Number(row.entregas) || 0);
+                return acc;
+            }, {});
 
-        // Obtenha os pares [motorista, entregas], ordene pelo valor (entregas)
-        const motoristasOrdenados = Object.entries(entregasPorMotorista)
-            .sort((a, b) => a[1] - b[1]); // crescente
+            // Obtenha os pares [motorista, entregas], ordene pelo valor (entregas)
+            const motoristasOrdenados = Object.entries(entregasPorMotorista)
+                .sort((a, b) => a[1] - b[1]); // crescente
 
-        // Atualize os dados do gráfico
-        deliveriesChart.data.labels = motoristasOrdenados.map(item => item[0]);
-        deliveriesChart.data.datasets[0].data = motoristasOrdenados.map(item => item[1]);
+            // Atualize os dados do gráfico
+            deliveriesChart.data.labels = motoristasOrdenados.map(item => item[0]);
+            deliveriesChart.data.datasets[0].data = motoristasOrdenados.map(item => item[1]);
 
-        // Atualize as cores conforme o tema atual
-        const fontColor = document.documentElement.classList.contains('dark') ? '#ffffffff' : '#000000ff';
-        deliveriesChart.options.plugins.legend.labels.color = fontColor;
-        deliveriesChart.options.scales.x.ticks.color = fontColor;
-        deliveriesChart.options.scales.y.ticks.color = fontColor;
+            // Atualize as cores conforme o tema atual
+            const fontColor = document.documentElement.classList.contains('dark') ? '#ffffffff' : '#000000ff';
+            deliveriesChart.options.plugins.legend.labels.color = fontColor;
+            deliveriesChart.options.scales.x.ticks.color = fontColor;
+            deliveriesChart.options.scales.y.ticks.color = fontColor;
 
-        deliveriesChart.update();
+            deliveriesChart.update();
 
         }
         if (volumeChart) {
@@ -244,19 +244,19 @@ document.addEventListener('DOMContentLoaded', () => {
             valueChart.update();
         }
         if (helpersChart) {
-    const chamadosPorAjudante = data.reduce((acc, row) => {
-        if (row.ajudante1) acc[row.ajudante1] = (acc[row.ajudante1] || 0) + 1;
-        return acc;
-    }, {});
+            const chamadosPorAjudante = data.reduce((acc, row) => {
+                if (row.ajudante1) acc[row.ajudante1] = (acc[row.ajudante1] || 0) + 1;
+                return acc;
+            }, {});
 
-    // Ordena ajudantes pelo número de chamados (crescente)
-    const ajudantesOrdenados = Object.entries(chamadosPorAjudante)
-      .sort((a, b) => a[1] - b[1]); // crescente
+            // Ordena ajudantes pelo número de chamados (crescente)
+            const ajudantesOrdenados = Object.entries(chamadosPorAjudante)
+                .sort((a, b) => a[1] - b[1]); // crescente
 
-    helpersChart.data.labels = ajudantesOrdenados.map(item => item[0]);
-    helpersChart.data.datasets[0].data = ajudantesOrdenados.map(item => item[1]);
-    helpersChart.update();
-}
+            helpersChart.data.labels = ajudantesOrdenados.map(item => item[0]);
+            helpersChart.data.datasets[0].data = ajudantesOrdenados.map(item => item[1]);
+            helpersChart.update();
+        }
         if (filialChart) {
             const entregasPorFilial = data.reduce((acc, row) => { if (row.filialExpedicao) acc[row.filialExpedicao] = (acc[row.filialExpedicao] || 0) + (Number(row.entregas) || 0); return acc; }, {});
             filialChart.data.labels = Object.keys(entregasPorFilial);
@@ -520,6 +520,27 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadInitialData();
         } catch (error) { console.error("Falha ao deletar relatório de entrega:", error); }
     }
+    function updateLogo() {
+        const logo = document.getElementById('company-logo');
+        const isDark = document.documentElement.classList.contains('dark') ||
+            window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (isDark) {
+            logo.src = 'public/images/logoBranca.png';
+        } else {
+            logo.src = 'public/images/logo.png';
+        }
+    }
+
+    // Detecta mudança manual do tema (caso use toggle de tema)
+    const observer = new MutationObserver(updateLogo);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+    // Detecta mudança automática do sistema
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateLogo);
+
+    // Atualiza ao carregar a página
+    window.addEventListener('DOMContentLoaded', updateLogo);
 
     function updateHistoryPaginationControls(totalItems, totalPages) {
         const els = { summary: document.getElementById('deliveryHistoryPaginationSummary'), prevMobile: document.getElementById('deliveryHistoryPrevBtnMobile'), nextMobile: document.getElementById('deliveryHistoryNextBtnMobile'), prevDesktop: document.getElementById('deliveryHistoryPrevBtnDesktop'), nextDesktop: document.getElementById('deliveryHistoryNextBtnDesktop'), links: document.getElementById('deliveryHistoryPaginationLinks') };
@@ -616,7 +637,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (sidebar && sidebarToggle) sidebarToggle.addEventListener('click', (e) => { e.stopPropagation(); sidebar.classList.toggle('collapsed'); });
-    
+
     document.addEventListener('click', (e) => {
         if (window.innerWidth < 1024 && sidebar && !sidebar.contains(e.target) && !sidebar.classList.contains('collapsed')) {
             sidebar.classList.add('collapsed');
@@ -640,13 +661,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
         const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
         const updateChartColors = chart => {
-    if (!chart) return;
-    const fontColor = document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827';
-    if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = fontColor;
-    if (chart.options.scales?.x?.ticks) chart.options.scales.x.ticks.color = fontColor;
-    if (chart.options.scales?.y?.ticks) chart.options.scales.y.ticks.color = fontColor;
-    chart.update();
-};
+            if (!chart) return;
+            const fontColor = document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827';
+            if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = fontColor;
+            if (chart.options.scales?.x?.ticks) chart.options.scales.x.ticks.color = fontColor;
+            if (chart.options.scales?.y?.ticks) chart.options.scales.y.ticks.color = fontColor;
+            chart.update();
+        };
 
         const applyTheme = (theme) => {
             if (theme === 'dark') {
