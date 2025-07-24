@@ -463,10 +463,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     const name = reportNames.find(n => n.timestamp === ts)?.name || date.toLocaleString('pt-BR');
                     const historyItemContainer = document.createElement('div');
                     historyItemContainer.className = 'flex items-center justify-between';
-                    const historyItem = document.createElement('button');
-                    historyItem.className = 'flex-grow text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700';
-                    historyItem.textContent = name;
-                    historyItem.onclick = () => loadReportByTimestamp(date);
+
+                    const checkboxId = `delivery-history-checkbox-${ts}`;
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'flex-grow';
+                    historyItem.innerHTML = `
+                        <input id="${checkboxId}" type="checkbox" value="${ts}" class="custom-checkbox mr-2">
+                        <label for="${checkboxId}" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">${name}</label>
+                    `;
+
                     const editBtn = document.createElement('button');
                     editBtn.className = 'p-2 text-gray-500 hover:text-blue-600';
                     editBtn.innerHTML = '<i class="fas fa-clipboard"></i>';
@@ -475,7 +480,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     deleteBtn.className = 'p-2 text-gray-500 hover:text-red-600';
                     deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
                     deleteBtn.onclick = () => { if (confirm(`Tem certeza que deseja excluir a importação "${name}"?`)) deleteDeliveryReport(date); };
-                    historyItemContainer.append(historyItem, editBtn, deleteBtn);
+
+                    historyItemContainer.appendChild(historyItem);
+                    historyItemContainer.appendChild(editBtn);
+                    historyItemContainer.appendChild(deleteBtn);
                     historyContainer.appendChild(historyItemContainer);
                 });
                 updateHistoryPaginationControls(uniqueTimestamps.length, totalPages);
@@ -592,21 +600,55 @@ document.addEventListener('DOMContentLoaded', () => {
         } else { alert("Por favor, selecione um arquivo Excel."); }
     });
 
-    if (applyFiltersBtn) applyFiltersBtn.addEventListener('click', () => {
+    if (applyFiltersBtn) applyFiltersBtn.addEventListener('click', async () => {
         currentPage = 1;
         const getSelectedOptions = (optionsId) => Array.from(document.querySelectorAll(`#${optionsId} input[type="checkbox"]:checked`)).map(cb => cb.value);
+        
+        // Obter históricos selecionados
+        const selectedTimestamps = getSelectedOptions('deliveryHistoryContainer').map(ts => parseInt(ts, 10));
+
+        if (selectedTimestamps.length === 0) {
+            // Se nenhum histórico selecionado, usar todos os dados originais
+            currentTableData = [...originalData];
+        } else {
+            // Carregar dados dos timestamps selecionados
+            try {
+                const db = await getDB();
+                const transaction = db.transaction([STORES.entregas], "readonly");
+                const store = transaction.objectStore(STORES.entregas);
+                const index = store.index("timestamp");
+
+                const promises = selectedTimestamps.map(ts => {
+                    return new Promise((resolve, reject) => {
+                        const request = index.getAll(IDBKeyRange.only(new Date(ts)));
+                        request.onsuccess = () => resolve(request.result);
+                        request.onerror = () => reject(request.error);
+                    });
+                });
+
+                const results = await Promise.all(promises);
+                currentTableData = results.flat();
+            } catch (error) {
+                console.error("Falha ao carregar dados dos históricos selecionados:", error);
+                currentTableData = [...originalData];
+            }
+        }
+
+        // Aplicar filtros adicionais
         const selectedMotoristas = getSelectedOptions('motoristaFilterOptions');
         const selectedDestinos = getSelectedOptions('destinoFilterOptions');
         const selectedVeiculos = getSelectedOptions('veiculoFilterOptions');
         const selectedAjudantes = getSelectedOptions('ajudanteFilterOptions');
         const selectedFiliais = getSelectedOptions('filialFilterOptions');
-        currentTableData = originalData.filter(row =>
+        
+        currentTableData = currentTableData.filter(row =>
             (selectedMotoristas.length === 0 || selectedMotoristas.includes(row.motorista)) &&
             (selectedDestinos.length === 0 || selectedDestinos.includes(row.destino)) &&
             (selectedVeiculos.length === 0 || selectedVeiculos.includes(row.veiculo)) &&
             (selectedAjudantes.length === 0 || selectedAjudantes.includes(row.ajudante1)) &&
             (selectedFiliais.length === 0 || selectedFiliais.includes(row.filialExpedicao))
         );
+        
         updateDashboard(currentTableData);
     });
 

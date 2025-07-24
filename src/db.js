@@ -1,10 +1,12 @@
 const DB_NAME = "DashboardDB";
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 const STORES = {
     entregas: "entregas",
     monitoramento: "monitoramento",
     reportNames: "report_names",
-    deliveryReportNames: "delivery_report_names"
+    deliveryReportNames: "delivery_report_names",
+    users: "users",
+    sessions: "sessions"
 };
 
 let dbPromise = null;
