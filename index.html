@@ -5,15 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cabral & Sousa - Monitoramento</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Estilos personalizados */
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #cc0000 0%, #ff3333 100%);
         }
         .card-hover:hover {
             transform: translateY(-5px);
+            transition: all 0.3s ease;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(204, 0, 0, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(204, 0, 0, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(204, 0, 0, 0);
+            }
         }
         .bg-cs-red {
             background-color: #cc0000;
@@ -35,158 +54,220 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- Barra de navegação -->
-    <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 flex items-center">
-                        <img id="company-logo" src="public/images/logo.png" alt="Company Logo" class="h-10">
+<body>
+    <!-- Top Bar -->
+    <div class="gradient-bg text-white py-2 px-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <i class="fas fa-truck-moving text-xl"></i>
+            <span class="font-semibold">Sistema de Monitoramento</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-4">
+            <span id="current-time" class="text-sm"></span>
+            <span class="text-sm">Bem-vindo, Operador</span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+            <div class="mb-4 md:mb-0">
+                <img id="company-logo" src="public/images/logo.png" alt="Company Logo" class="h-12">
+            </div>
+            <div class="text-center md:text-right">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Monitoramento de Operações</h1>
+                <p class="text-gray-600 mt-1">Acompanhamento em tempo real</p>
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- Total Orders -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-cs-red rounded-lg p-3">
+                            <i class="fas fa-clipboard-list text-white text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-sm font-medium text-gray-500">Total de Pedidos</h3>
+                            <p id="totalPedidos" class="text-2xl font-semibold text-gray-900 mt-1"></p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="h-2 bg-gray-200 rounded-full">
+                            <div class="h-2 bg-cs-red rounded-full" style="width: 75%"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="hidden sm:ml-6 sm:flex sm:items-center">
-                    <div class="ml-4 flex items-center md:ml-6">
-                        <span class="text-gray-500 text-sm">Bem-vindo ao sistema de monitoramento</span>
+            </div>
+
+            <!-- Total Deliveries -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-cs-red-light rounded-lg p-3">
+                            <i class="fas fa-check-circle text-white text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-sm font-medium text-gray-500">Total de entregas</h3>
+                            <p id="totalEntregas" class="text-2xl font-semibold text-gray-900 mt-1">0</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="h-2 bg-gray-200 rounded-full">
+                            <div class="h-2 bg-cs-red-light rounded-full" style="width: 65%"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </nav>
 
-    <!-- Conteúdo principal -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Cabeçalho -->
-        <div class="text-center mb-12">
-            <h1 class="text-3xl font-bold text-gray-900 sm:text-4xl">
-                Sistema de Monitoramento Cabral & Sousa
-            </h1>
-            <p class="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
-                Acompanhe em tempo real as operações da sua empresa
-            </p>
-        </div>
-
-        <!-- Cards de dashboard -->
-        <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
-            <!-- Card Monitoramento -->
-            <div class="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 card-hover">
+        <!-- Main Dashboard Cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Monitoring Dashboard -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover pulse-animation">
                 <div class="p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-cs-red rounded-md p-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                            </svg>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-cs-red rounded-lg p-4">
+                            <i class="fas fa-tachometer-alt text-white text-2xl"></i>
                         </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <h3 class="text-lg font-medium text-gray-900">Dashboard de Monitoramento</h3>
-                            <p class="mt-1 text-sm text-gray-500">Acompanhe todas as métricas operacionais</p>
+                        <div class="ml-5 flex-1">
+                            <h2 class="text-xl font-bold text-gray-800">Dashboard de Monitoramento</h2>
+                            <p class="mt-2 text-gray-600">Acompanhe todas as métricas operacionais em tempo real com nosso painel interativo.</p>
+                            <div class="mt-6">
+                                <a href="/dashboard-monitoramento.html" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-cs-red hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                    Acessar Monitoramento
+                                    <i class="fas fa-arrow-right ml-2"></i>
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                    <div class="mt-6">
-                        <a href="/dashboard-monitoramento.html" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-cs-red hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                            Acessar Monitoramento
-                        </a>
                     </div>
                 </div>
                 <div class="bg-gray-50 px-6 py-4">
-                    <div class="text-sm">
-                        <span class="text-gray-500">Última atualização:</span>
-                        <span class="font-medium text-gray-900 ml-1" id="last-update-monitoramento">carregando...</span>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Última atualização: <span id="last-update-monitoramento" class="font-medium text-gray-900">carregando...</span></span>
+                        <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">Online</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Card Entregas -->
-            <div class="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 card-hover">
+            <!-- Deliveries Dashboard -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover">
                 <div class="p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-cs-red-light rounded-md p-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                            </svg>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-cs-red-light rounded-lg p-4">
+                            <i class="fas fa-truck text-white text-2xl"></i>
                         </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <h3 class="text-lg font-medium text-gray-900">Dashboard de Entregas</h3>
-                            <p class="mt-1 text-sm text-gray-500">Controle completo do fluxo de entregas</p>
+                        <div class="ml-5 flex-1">
+                            <h2 class="text-xl font-bold text-gray-800">Dashboard de Entregas</h2>
+                            <p class="mt-2 text-gray-600">Controle completo do fluxo de entregas com mapas e status em tempo real.</p>
+                            <div class="mt-6">
+                                <a href="/dashboard-entregas.html" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-cs-red-light hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400">
+                                    Acessar Entregas
+                                    <i class="fas fa-arrow-right ml-2"></i>
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                    <div class="mt-6">
-                        <a href="/dashboard-entregas.html" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-cs-red-light hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400">
-                            Acessar Entregas
-                        </a>
                     </div>
                 </div>
                 <div class="bg-gray-50 px-6 py-4">
-                    <div class="text-sm">
-                        <span class="text-gray-500">Última atualização:</span>
-                        <span class="font-medium text-gray-900 ml-1" id="last-update-entregas">carregando...</span>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Última atualização: <span id="last-update-entregas" class="font-medium text-gray-900">carregando...</span></span>
+                        <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">Online</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Estatísticas rápidas -->
-        <div class="mt-12">
-            <h2 class="text-xl font-semibold text-gray-900 mb-6">Visão geral do sistema</h2>
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-
-                <!-- Card 1 -->
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="px-4 py-5 sm:p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-cs-red-light rounded-md p-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <div class="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt class="text-sm font-medium text-gray-500 truncate">Entregas concluídas</dt>
-                                    <dd>
-                                        <div class="text-lg font-medium text-gray-900">Analisando..</div>
-                                    </dd>
-                                </dl>
-                            </div>
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h3 class="text-lg font-medium leading-6 text-gray-900">Atividade Recente</h3>
+            </div>
+            <div class="divide-y divide-gray-200">
+                <div class="px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-green-100 rounded-full p-2">
+                            <i class="fas fa-check-circle text-green-600"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">Entrega #1234 concluída</p>
+                            <p class="text-sm text-gray-500">Há 5 minutos</p>
                         </div>
                     </div>
                 </div>
-
-                <!-- Card 2 -->
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="px-4 py-5 sm:p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-cs-red-light rounded-md p-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                </svg>
-                            </div>
-                            <div class="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt class="text-sm font-medium text-gray-500 truncate">Entregas pendentes</dt>
-                                    <dd>
-                                        <div class="text-lg font-medium text-gray-900">Analisando...</div>
-                                    </dd>
-                                </dl>
-                            </div>
+                <div class="px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-100 rounded-full p-2">
+                            <i class="fas fa-truck text-blue-600"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">Novo pedido registrado #5678</p>
+                            <p class="text-sm text-gray-500">Há 15 minutos</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-yellow-100 rounded-full p-2">
+                            <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">Atraso na entrega #9012</p>
+                            <p class="text-sm text-gray-500">Há 25 minutos</p>
                         </div>
                     </div>
                 </div>
             </div>
+            <div class="bg-gray-50 px-6 py-4 text-right">
+                <a href="#" class="text-sm font-medium text-cs-red hover:text-red-700">Ver todas as atividades</a>
+            </div>
         </div>
-    </main>
+    </div>
 
-    <!-- Rodapé -->
-    <footer class="bg-white mt-12 border-t border-gray-200">
-        <div class="max-w-7xl mx-auto py-6 px-4 overflow-hidden sm:px-6 lg:px-8">
-            <p class="text-center text-base text-gray-500">
-                &copy; 2023 Cabral & Sousa Transporte. Todos os direitos reservados.
-            </p>
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-8">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-sm text-gray-500">&copy; 2023 Cabral & Sousa Transporte. Todos os direitos reservados.</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-gray-500">
+                        <i class="fas fa-question-circle"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-gray-500">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-gray-500">
+                        <i class="fas fa-bell"></i>
+                    </a>
+                </div>
+            </div>
         </div>
     </footer>
 
     <script>
-        // Atualiza as datas de última atualização
+        // Update time function
+        function updateTime() {
+            const now = new Date();
+            const options = { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById('current-time').textContent = now.toLocaleDateString('pt-BR', options);
+        }
+        
+        // Update time every second
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Update last update times
         document.addEventListener('DOMContentLoaded', function() {
             const now = new Date();
             const options = { 
@@ -194,13 +275,50 @@
                 month: '2-digit', 
                 year: 'numeric', 
                 hour: '2-digit', 
-                minute: '2-digit' 
+                minute: '2-digit'
             };
             const formattedDate = now.toLocaleDateString('pt-BR', options);
             
             document.getElementById('last-update-monitoramento').textContent = formattedDate;
             document.getElementById('last-update-entregas').textContent = formattedDate;
+            
+            // This would be replaced with your actual data fetching logic
+            // For demo purposes, we'll simulate data loading
+            setTimeout(() => {
+                // These elements would be populated by your script.js
+                document.getElementById('totalPedidos').textContent = '1,248';
+                document.getElementById('totalEntregas').textContent = '982';
+            }, 1000);
+        });
+
+        // This is where you would integrate with your script.js
+        // The following is just a placeholder for the actual integration
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simulate loading data from your script.js
+            // In your actual implementation, you would have:
+            // const totalEntregasEl = document.getElementById('totalEntregas');
+            // const totalPedidosEl = document.getElementById('totalPedidos');
+            // And these would be updated by your script.js
+            
+            // For demo purposes, we'll set some values
+            setTimeout(() => {
+                document.getElementById('totalEntregas').textContent = '982';
+                document.getElementById('totalPedidos').textContent = '1,248';
+                
+                // Calculate pending deliveries (just for demo)
+                const entregas = 982;
+                const pedidos = 1248;
+                const pendentes = pedidos - entregas;
+                document.querySelectorAll('p')[4].textContent = pendentes; // Pending deliveries
+                
+                // Calculate efficiency (just for demo)
+                const eficiencia = Math.round((entregas / pedidos) * 100);
+                document.querySelectorAll('p')[5].textContent = eficiencia + '%';
+            }, 1500);
         });
     </script>
+    
+    <!-- Your actual script would be included here -->
+    <script src="public/js/script.js"></script>
 </body>
 </html>
