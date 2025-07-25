@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Entregas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="public/css/style.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#D80D0D',
+                        secondary: '#F3F4F6',
+                        dark: '#111827',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-secondary dark:bg-gray-900 font-sans antialiased">
+    <!-- Header Fixo -->
+    <header class="sticky top-0 z-30 bg-white dark:bg-gray-800 shadow-md dark:shadow-gray-700">
+        <div class="container px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <button id="sidebarToggle" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <img id="company-logo" src="public/images/logo.png" alt="Company Logo" class="h-10">
+                <h1 class="text-xl md:text-2xl font-bold text-dark dark:text-white">Dashboard de Entregas</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
+                    <i id="theme-toggle-dark-icon" class="fas fa-moon hidden"></i>
+                    <i id="theme-toggle-light-icon" class="fas fa-sun hidden"></i>
+                </button>
+                <div class="flex items-center space-x-2">
+                   <input type="file" id="fileInput" accept=".xlsx" class="block text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
+                       file:rounded-full file:border-0
+                       file:text-sm file:font-semibold
+                       file:bg-primary file:text-white
+                       hover:file:bg-red-700
+                       cursor-pointer">
+                   <button id="importBtn" class="bg-primary hover:bg-red-700 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center space-x-2">
+                       <i class="fas fa-file-excel"></i>
+                       <span class="hidden md:inline">Importar</span>
+                   </button>
+                   <button id="clearDbBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center space-x-2">
+                       <i class="fas fa-broom"></i>
+                       <span class="hidden md:inline">Zerar Banco</span>
+                   </button>
+               </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Container Principal com Layout Flex -->
+    <div class="flex flex-col lg:flex-row">
+        
+        <!-- Barra Lateral de Filtros (Sidebar) -->
+        <aside id="sidebar" class="w-80 flex-shrink-0 bg-white dark:bg-gray-800 p-6 shadow-lg sticky top-[76px] h-[calc(100vh-76px)] overflow-y-auto">
+            <nav class="space-y-2">
+                <a href="/index.html" class="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-desktop mr-3"></i>
+                    Voltar ao menu Anterior
+                </a>
+                <a href="/dashboard-entregas.html" class="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-chart-pie mr-3"></i>
+                    Dashboard de Entregas
+                </a>
+            </nav>
+            <hr class="my-4 border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Histórico de Importações (selecione um ou mais)</h3>
+            <div id="deliveryHistoryContainer" class="space-y-2 mb-4">
+                <!-- Histórico será populado pelo JS -->
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-800 px-4 py-3 flex items-center justify-between sm:px-6 border-t border-gray-200 dark:border-gray-700">
+               <div class="flex-1 flex justify-between sm:hidden">
+                   <button id="deliveryHistoryPrevBtnMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                       Anterior
+                   </button>
+                   <button id="deliveryHistoryNextBtnMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                       Próxima
+                   </button>
+               </div>
+               <div class="hidden sm:flex-1 sm:flex sm:flex-wrap sm:items-center sm:justify-center md:justify-between gap-2">
+                   <div>
+                       <p id="deliveryHistoryPaginationSummary" class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                           Mostrando
+                           <span class="font-medium">0</span>
+                           a
+                           <span class="font-medium">0</span>
+                           de
+                           <span class="font-medium">0</span>
+                           resultados
+                       </p>
+                   </div>
+                   <div>
+                       <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                           <button id="deliveryHistoryPrevBtnDesktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                               <span class="sr-only">Anterior</span>
+                               <i class="fas fa-chevron-left"></i>
+                           </button>
+                           <div id="deliveryHistoryPaginationLinks" class="flex">
+                               <!-- Page links will be inserted here -->
+                           </div>
+                           <button id="deliveryHistoryNextBtnDesktop" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                               <span class="sr-only">Próxima</span>
+                               <i class="fas fa-chevron-right"></i>
+                           </button>
+                       </nav>
+                   </div>
+               </div>
+           </div>
+            <hr class="my-4 border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Filtros</h3>
+            <div class="space-y-4">
+                <div class="relative">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Motorista</label>
+                    <button id="motoristaFilterBtn" class="w-full bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <span id="motoristaFilterText" class="truncate">Todos</span>
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                    </button>
+                    <div id="motoristaFilterDropdown" class="hidden absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                        <div class="p-2"><input type="text" id="motoristaSearch" placeholder="Buscar motorista..." class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md text-sm"></div>
+                        <div id="motoristaFilterOptions" class="dropdown-checkbox-menu p-2 space-y-1"></div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Destino</label>
+                    <button id="destinoFilterBtn" class="w-full bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <span id="destinoFilterText" class="truncate">Todos</span>
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                    </button>
+                    <div id="destinoFilterDropdown" class="hidden absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                        <div class="p-2"><input type="text" id="destinoSearch" placeholder="Buscar destino..." class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md text-sm"></div>
+                        <div id="destinoFilterOptions" class="dropdown-checkbox-menu p-2 space-y-1"></div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Veículo</label>
+                    <button id="veiculoFilterBtn" class="w-full bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <span id="veiculoFilterText" class="truncate">Todos</span>
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                    </button>
+                    <div id="veiculoFilterDropdown" class="hidden absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                        <div class="p-2"><input type="text" id="veiculoSearch" placeholder="Buscar veículo..." class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md text-sm"></div>
+                        <div id="veiculoFilterOptions" class="dropdown-checkbox-menu p-2 space-y-1"></div>
+                    </div>
+                </div>
+               <div class="relative">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ajudante</label>
+                   <button id="ajudanteFilterBtn" class="w-full bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                       <span id="ajudanteFilterText" class="truncate">Todos</span>
+                       <i class="fas fa-chevron-down text-gray-400"></i>
+                   </button>
+                   <div id="ajudanteFilterDropdown" class="hidden absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                       <div class="p-2"><input type="text" id="ajudanteSearch" placeholder="Buscar ajudante..." class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md text-sm"></div>
+                       <div id="ajudanteFilterOptions" class="dropdown-checkbox-menu p-2 space-y-1"></div>
+                   </div>
+               </div>
+               <div class="relative">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filial Expedição</label>
+                    <button id="filialFilterBtn" class="w-full bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <span id="filialFilterText" class="truncate">Todos</span>
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                    </button>
+                    <div id="filialFilterDropdown" class="hidden absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                        <div class="p-2"><input type="text" id="filialSearch" placeholder="Buscar filial..." class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md text-sm"></div>
+                        <div id="filialFilterOptions" class="dropdown-checkbox-menu p-2 space-y-1"></div>
+                    </div>
+                </div>
+               <button id="applyFiltersBtn" class="w-full bg-primary hover:bg-red-700 text-white px-10 py-2 rounded-lg transition duration-300">
+                    Aplicar Filtros
+                </button>
+                
+                <!-- Controles de visibilidade dos gráficos -->
+                <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h4 class="text-md font-semibold text-dark dark:text-white mb-3">Exibir Gráficos</h4>
+                    <div class="space-y-2">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="showHelperChart" class="custom-checkbox mr-2">
+                            <label for="showHelperChart" class="text-sm font-medium text-gray-700 dark:text-gray-300">Gráfico de Ajudantes</label>
+                        </div>
+                        <div class="flex items-center">
+                           <input type="checkbox" id="showVolumeChart" class="custom-checkbox mr-2">
+                           <label for="showVolumeChart" class="text-sm font-medium text-gray-700 dark:text-gray-300">Gráfico de Volume</label>
+                       </div>
+                       <div class="flex items-center">
+                           <input type="checkbox" id="showValueChart" class="custom-checkbox mr-2">
+                           <label for="showValueChart" class="text-sm font-medium text-gray-700 dark:text-gray-300">Gráfico de Valor</label>
+                       </div>
+                       <div class="flex items-center">
+                            <input type="checkbox" id="showFilialChart" class="custom-checkbox mr-2">
+                            <label for="showFilialChart" class="text-sm font-medium text-gray-700 dark:text-gray-300">Gráfico de Filial</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Área de Conteúdo Principal -->
+        <main class="flex-1 p-6 min-w-0">
+            <!-- Cards de Resumo -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-r from-primary to-red-600 text-white p-6 rounded-2xl shadow-xl animate-fade-in hover-scale" style="animation-delay: 0.1s;">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium">Total de Entregas</p>
+                            <h2 id="totalEntregas" class="text-2xl font-bold mt-2">0</h2>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <i class="fas fa-box-open text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-r from-blue-600 to-blue-400 text-white p-6 rounded-2xl shadow-xl animate-fade-in hover-scale" style="animation-delay: 0.2s;">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium">Total de Pedidos</p>
+                            <h2 id="totalPedidos" class="text-2xl font-bold mt-2">0</h2>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <i class="fas fa-clipboard-list text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-r from-green-600 to-green-400 text-white p-6 rounded-2xl shadow-xl animate-fade-in hover-scale" style="animation-delay: 0.3s;">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium">Peso Total</p>
+                            <h2 id="totalPeso" class="text-2xl font-bold mt-2">0</h2>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <i class="fas fa-weight text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-r from-purple-600 to-purple-400 text-white p-6 rounded-2xl shadow-xl animate-fade-in hover-scale" style="animation-delay: 0.4s;">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm font-medium">Valor Total</p>
+                                <button id="toggleValorBtn" class="text-white opacity-75 hover:opacity-100 focus:outline-none">
+                                    <i id="toggleValorIcon" class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <h2 id="totalValor" class="text-2xl font-bold mt-2">R$ ●●●●●</h2>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <i class="fas fa-money-bill-wave text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid Responsivo para os Gráficos -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Gráfico Principal (Ocupa a largura total em telas grandes) -->
+                <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md dark:shadow-gray-700 dark:text-white">
+                    <h3 class="text-lg font-semibold text-gray-600 dark:text-white mb-4">Entregas por Motorista</h3>
+                    <div class="h-96 dark:text-white">
+                        <canvas id="deliveriesChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Gráficos Secundários -->
+                <div id="helpersChartContainer" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md dark:shadow-gray-700 hidden">
+                    <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Chamados por Ajudante</h3>
+                    <div class="h-80">
+                        <canvas id="helpersChart"></canvas>
+                    </div>
+                </div>
+                <div id="volumeChartContainer" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md dark:shadow-gray-700 hidden">
+                    <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Volume por Destino</h3>
+                    <div class="h-80">
+                        <canvas id="volumeChart"></canvas>
+                    </div>
+                </div>
+                <div id="valueChartContainer" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md dark:shadow-gray-700 hidden">
+                    <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Distribuição de Valor</h3>
+                    <div class="h-80">
+                        <canvas id="valueChart"></canvas>
+                    </div>
+                </div>
+                <div id="filialChartContainer" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md dark:shadow-gray-700 hidden">
+                  <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Entregas por Filial</h3>
+                  <div class="h-80">
+                      <canvas id="filialChart"></canvas>
+                  </div>
+              </div>
+            </div>
+
+            <!-- Tabela de Dados -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-700 overflow-hidden">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row justify-between items-center">
+                    <h3 class="text-lg font-semibold text-dark dark:text-white mb-2 md:mb-0">Detalhes das Roteirizações</h3>
+                    <div class="flex items-center space-x-2 w-full md:w-auto">
+                        <div class="relative flex-grow md:flex-grow-0 md:w-64">
+                            <input type="text" id="searchInput" placeholder="Pesquisar..." class="w-full bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                        <button id="exportDataBtn" class="bg-primary hover:bg-red-700 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center">
+                            <i class="fas fa-download mr-2"></i>
+                            <span class="hidden md:inline">Exportar</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th scope="col" data-column="carga-erp" class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 sticky top-0 z-10">
+                                    <div class="flex items-center">
+                                        CARGA ERP
+                                        <i class="fas fa-sort ml-2 text-gray-400"></i>
+                                    </div>
+                                </th>
+                                <th scope="col" data-column="entregas" class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 sticky top-0 z-10">
+                                    <div class="flex items-center">
+                                        ENTREGAS
+                                        <i class="fas fa-sort ml-2 text-gray-400"></i>
+                                    </div>
+                                </th>
+                                <th scope="col" data-column="pedidos" class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 sticky top-0 z-10">
+                                    <div class="flex items-center">
+                                        PEDIDOS
+                                        <i class="fas fa-sort ml-2 text-gray-400"></i>
+                                    </div>
+                                </th>
+                                <th scope="col" data-column="peso (kg)" class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 sticky top-0 z-10">
+                                    <div class="flex items-center">
+                                        PESO (KG)
+                                        <i class="fas fa-sort ml-2 text-gray-400"></i>
+                                    </div>
+                                </th>
+                                <th scope="col" data-column="volume (m3)" class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 sticky top-0 z-10">
+                                    <div class="flex items-center">
+                                        VOLUME (M3)
+                                        <i class="fas fa-sort ml-2 text-gray-400"></i>
+                                    </div>
+                                </th>
+                                <th scope="col" data-column="valor (r$)" class="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 sticky top-0 z-10">
+                                    <div class="flex items-center">
+                                        VALOR (R$)
+                                        <i class="fas fa-sort ml-2 text-gray-400"></i>
+                                    </div>
+                                </th>
+                                <th scope="col" data-column="destino" class="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 sticky top-0 z-10">
+                                    <div class="flex items-center">
+                                        DESTINO
+                                        <i class="fas fa-sort ml-2 text-gray-400"></i>
+                                    </div>
+                                </th>
+                                <th scope="col" data-column="motorista" class="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 sticky top-0 z-10">
+                                    <div class="flex items-center">
+                                        MOTORISTA
+                                        <i class="fas fa-sort ml-2 text-gray-400"></i>
+                                    </div>
+                                </th>
+                                <th scope="col" data-column="veiculo" class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 sticky top-0 z-10">
+                                    <div class="flex items-center">
+                                        VEÍCULO
+                                        <i class="fas fa-sort ml-2 text-gray-400"></i>
+                                    </div>
+                                </th>
+                                <th scope="col" data-column="ajudante 1" class="w-2/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 sticky top-0 z-10">
+                                   <div class="flex items-center">
+                                       AJUDANTE
+                                       <i class="fas fa-sort ml-2 text-gray-400"></i>
+                                   </div>
+                               </th>
+                                <th scope="col" class="sticky right-0 bg-gray-50 dark:bg-gray-700 px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
+                                    AÇÕES
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- As linhas de dados serão inseridas aqui via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800 px-4 py-3 flex items-center justify-between sm:px-6 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex-1 flex justify-between sm:hidden">
+                        <button id="prevPageBtnMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                            Anterior
+                        </button>
+                        <button id="nextPageBtnMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                            Próxima
+                        </button>
+                    </div>
+                    <div class="hidden sm:flex-1 sm:flex sm:flex-wrap sm:items-center sm:justify-center md:justify-between gap-2">
+                        <div>
+                            <p id="paginationSummary" class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                Mostrando
+                                <span class="font-medium">0</span>
+                                a
+                                <span class="font-medium">0</span>
+                                de
+                                <span class="font-medium">0</span>
+                                resultados
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <button id="prevPageBtnDesktop" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                                    <span class="sr-only">Anterior</span>
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <div id="paginationLinks" class="flex">
+                                    <!-- Page links will be inserted here -->
+                                </div>
+                                <button id="nextPageBtnDesktop" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50" disabled>
+                                    <span class="sr-only">Próxima</span>
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-60 hidden">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-sm">
+            <h3 class="text-xl font-semibold text-dark dark:text-white mb-4">Acesso Restrito</h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">Para visualizar o valor total, por favor, insira a senha.</p>
+            <input type="password" id="passwordInput" class="w-full bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-primary">
+            <div class="flex justify-end space-x-4">
+                <button id="cancelPasswordBtn" class="text-gray-500 hover:text-gray-700 dark:hover:text-white">Cancelar</button>
+                <button id="submitPasswordBtn" class="bg-primary hover:bg-red-700 text-white px-6 py-2 rounded-lg">Liberar</button>
+            </div>
+        </div>
+    </div>
+
+   <!-- Detalhes Modal -->
+  <div id="detailsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden modal-overlay">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl m-4 modal-content transform scale-95">
+          <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 class="text-xl font-semibold text-dark dark:text-white">Detalhes da Carga</h3>
+              <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                  <i class="fas fa-times text-2xl"></i>
+              </button>
+          </div>
+          <div id="modalBody" class="p-6 max-h-[70vh] overflow-y-auto">
+              <!-- Modal content will be populated by JS -->
+          </div>
+          <div class="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-right">
+               <button id="modalEditBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-300">
+                  <i class="fas fa-edit mr-2"></i>Editar
+              </button>
+              <button id="modalSaveBtn" class="bg-primary hover:bg-red-700 text-white px-4 py-2 rounded-lg transition duration-300 hidden">
+                  <i class="fas fa-save mr-2"></i>Salvar
+              </button>
+          </div>
+      </div>
+  </div>
+
+<!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 z-70 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl flex flex-col items-center">
+            <i class="fas fa-spinner fa-spin text-primary text-4xl"></i>
+            <p id="loadingText" class="text-dark dark:text-white mt-4">Processando dados...</p>
+        </div>
+    </div>
+   <script src="src/db.js"></script>
+   <script src="public/js/script.js"></script>
+   <footer class="relative bg-[#b30b0b] text-[#f1f1f1] pt-20 pb-10">
+        <!-- Wave shape divider -->
+        <div class="wave-shape">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+            </svg>
+        </div>
+
+        <div class="container mx-auto px-4">
+            <div class="flex flex-wrap -mx-4">
+                <!-- Company Info -->
+                <div class="w-full lg:w-1/3 px-4 mb-10 lg:mb-0">
+                    <div class="hover-scale">
+                        <h3 class="text-2xl font-bold mb-6 flex items-center">
+                            <i class="fas fa-truck mr-3 text-[#f1f1f1]"></i>
+                            Cabral e Sousa
+                        </h3>
+                        <p class="mb-4 text-[#f1f1f1] leading-relaxed">
+                            Desde 1976, uma marca cada vez mais forte.
+                        </p>
+                        <div class="flex space-x-4 mt-6">
+                            <a href="https://www.facebook.com/CabraleSousa/" class="text-[#f1f1f1] hover:text-[#D80D0D] transition-colors duration-300">
+                                <i class="fab fa-facebook-f text-xl text-[#f1f1f1]"></i>
+                            </a>
+                            <a href="https://www.instagram.com/grupocabralesousa/" class="text-[#f1f1f1] hover:text-[#D80D0D] transition-colors duration-300">
+                                <i class="fab fa-instagram text-xl text-[#f1f1f1]"></i>
+                            </a>
+                            <a href="https://br.linkedin.com/company/cabralesousa" class="text-[#f1f1f1] hover:text-[#D80D0D] transition-colors duration-300">
+                                <i class="fab fa-linkedin-in text-xl text-[#f1f1f1]"></i>
+                            </a>
+                            <a href="https://www.tiktok.com/@cabralesousa" class="text-[#f1f1f1] hover:text-[#D80D0D] transition-colors duration-300">
+                                <i class="fab fa-tiktok text-xl text-[#f1f1f1]"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="w-full md:w-1/2 lg:w-1/3 px-4 mb-10 md:mb-0">
+                    <h3 class="text-xl font-bold mb-6 flex items-center">
+                        <i class="fas fa-map-marker-alt mr-3 text-[#f1f1f1]"></i>
+                        Informações de Contato
+                    </h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <i class="fas fa-home mt-1 mr-3 text-[#f1f1f1]"></i>
+                            <span class="text-[#f1f1f1]">Vitória da conquista Av. Régis Pachêco, 594 - Centro, Vitória da Conquista - BA, 45000-755</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-home mt-1 mr-3 text-[#f1f1f1]"></i>
+                            <span class="text-[#f1f1f1]">Vitória da conquista Av. Régis Pachêco, 67 - Centro, Vitória da Conquista - BA, 45000-755</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-envelope mt-1 mr-3 text-[#f1f1f1]"></i>
+                            <span class="text-[#f1f1f1]">contato@cabralesousa.com.br</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-clock mt-1 mr-3 text-[#f1f1f1]"></i>
+                            <span class="text-[#f1f1f1]">Seg-Sex: 8h às 18h, Sab: 8h às 12h</span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <!-- Copyright -->
+            <div class="mt-12 pt-8 border-t border-gray-800 text-center text-gray-400">
+                <p class="text-[#f1f1f1]">&copy; <span data-year></span> Cabral e Sousa. Todos os direitos reservados.</p>
+                <p class="mt-2 text-[#f1f1f1]">Desenvolvido por <span class="text-[#F3F4F6] font-bold">Cauã Henrique</span></p>
+            </div>
+        </div>
+
+        <!-- Back to top button -->
+        <button id="backToTop" class="fixed bottom-6 right-6 bg-[#D80D0D] text-[#f1f1f1] p-3 rounded-full shadow-lg opacity-0 invisible transition-all duration-300 hover:bg-[#b30b0b]">
+            <i class="fas fa-arrow-up"></i>
+        </button>
+    </footer>
+  </body>
+  </html>
