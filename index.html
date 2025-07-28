@@ -81,47 +81,59 @@
         </div>
 
         <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <!-- Total Orders -->
-            <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
-                <div class="p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-cs-red rounded-lg p-3">
-                            <i class="fas fa-clipboard-list text-white text-xl"></i>
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md mb-8">
+            <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Visão Rápida</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-r from-red-600 to-red-400 text-white p-6 rounded-2xl shadow-xl animate-fade-in hover-scale" style="animation-delay: 0.1s;">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium">Total de Entregas</p>
+                            <h2 id="totalEntregas" class="text-2xl font-bold mt-2">0</h2>
                         </div>
-                        <div class="ml-4">
-                            <h3 class="text-sm font-medium text-gray-500">Total de Pedidos</h3>
-                            <p id="totalPedidos" class="text-2xl font-semibold text-gray-900 mt-1"></p>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <i class="fas fa-box-open text-xl"></i>
                         </div>
                     </div>
-                    <div class="mt-4">
-                        <div class="h-2 bg-gray-200 rounded-full">
-                            <div class="h-2 bg-cs-red rounded-full" style="width: 75%"></div>
+                </div>
+                <div class="bg-gradient-to-r from-blue-600 to-blue-400 text-white p-6 rounded-2xl shadow-xl animate-fade-in hover-scale" style="animation-delay: 0.2s;">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium">Total de Pedidos</p>
+                            <h2 id="totalPedidos" class="text-2xl font-bold mt-2">0</h2>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <i class="fas fa-clipboard-list text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-r from-green-600 to-green-400 text-white p-6 rounded-2xl shadow-xl animate-fade-in hover-scale" style="animation-delay: 0.3s;">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium">Peso Total</p>
+                            <h2 id="totalPeso" class="text-2xl font-bold mt-2">0</h2>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <i class="fas fa-weight text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-r from-purple-600 to-purple-400 text-white p-6 rounded-2xl shadow-xl animate-fade-in hover-scale" style="animation-delay: 0.4s;">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm font-medium">Valor Total</p>
+                                <button id="toggleValorBtn" class="text-white opacity-75 hover:opacity-100 focus:outline-none">
+                                    <i id="toggleValorIcon" class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <h2 id="totalValor" class="text-2xl font-bold mt-2">R$ ●●●●●</h2>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <i class="fas fa-money-bill-wave text-xl"></i>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Total Deliveries -->
-            <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
-                <div class="p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-cs-red-light rounded-lg p-3">
-                            <i class="fas fa-check-circle text-white text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <h3 class="text-sm font-medium text-gray-500">Total de entregas</h3>
-                            <p id="totalEntregas" class="text-2xl font-semibold text-gray-900 mt-1">0</p>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <div class="h-2 bg-gray-200 rounded-full">
-                            <div class="h-2 bg-cs-red-light rounded-full" style="width: 65%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Main Dashboard Cards -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -183,45 +195,53 @@
         <!-- Recent Activity -->
         <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8">
             <div class="px-6 py-5 border-b border-gray-200">
-                <h3 class="text-lg font-medium leading-6 text-gray-900">Atividade Recente</h3>
+                <h3 class="text-lg font-medium leading-6 text-gray-900">Atividade Recente (Em desenvolvimento)</h3>
             </div>
-            <div class="divide-y divide-gray-200">
-                <div class="px-6 py-4">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-green-100 rounded-full p-2">
-                            <i class="fas fa-check-circle text-green-600"></i>
+
+            <!-- ultimas alterações realiizadas em dashboard-entregas.html -->
+            <div class="p-6">
+                <ul class="space-y-4">
+                    <li class="flex items-center">
+                        <div class="flex-shrink-0 bg-cs-red-light rounded-full p-2">
+                            <i class="fas fa-edit text-white"></i>
                         </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-900">Entrega #1234 concluída</p>
-                            <p class="text-sm text-gray-500">Há 5 minutos</p>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-700">Atualização de status de entrega para "Em rota".</p>
+                            <span class="text-xs text-gray-500">Há 2 horas</span>
                         </div>
-                    </div>
-                </div>
-                <div class="px-6 py-4">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-blue-100 rounded-full p-2">
-                            <i class="fas fa-truck text-blue-600"></i>
+                    </li>
+                    <li class="flex items-center">
+                        <div class="flex-shrink-0 bg-cs-red-light rounded-full p-2">
+                            <i class="fas fa-edit text-white"></i>
                         </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-900">Novo pedido registrado #5678</p>
-                            <p class="text-sm text-gray-500">Há 15 minutos</p>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-700">Atualização de status de entrega para "Entregue".</p>
+                            <span class="text-xs text-gray-500">Há 4 horas</span>
                         </div>
-                    </div>
-                </div>
-                <div class="px-6 py-4">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-yellow-100 rounded-full p-2">
-                            <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                    </li>
+                    <li class="flex items-center">
+                        <div class="flex-shrink-0 bg-cs-red-light rounded-full p-2">
+                            <i class="fas fa-edit text-white"></i>
                         </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-900">Atraso na entrega #9012</p>
-                            <p class="text-sm text-gray-500">Há 25 minutos</p>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-700">Atualização de status de entrega para "Cancelada".</p>
+                            <span class="text-xs text-gray-500">Há 6 horas</span>
                         </div>
-                    </div>
-                </div>
+                    </li>
+                </ul>
             </div>
-            <div class="bg-gray-50 px-6 py-4 text-right">
-                <a href="#" class="text-sm font-medium text-cs-red hover:text-red-700">Ver todas as atividades</a>
+            
+
+        </div>
+    </div>
+    <div id="passwordModal" class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-60 hidden">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-sm">
+            <h3 class="text-xl font-semibold text-dark dark:text-white mb-4">Acesso Restrito</h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">Para visualizar o valor total, por favor, insira a senha.</p>
+            <input type="password" id="passwordInput" class="w-full bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-primary">
+            <div class="flex justify-end space-x-4">
+                <button id="cancelPasswordBtn" class="text-gray-500 hover:text-gray-700 dark:hover:text-white">Cancelar</button>
+                <button id="submitPasswordBtn" class="bg-gray-700 hover:bg-red-600 text-white px-6 py-2 rounded-lg">Liberar</button>
             </div>
         </div>
     </div>
@@ -282,43 +302,10 @@
             document.getElementById('last-update-monitoramento').textContent = formattedDate;
             document.getElementById('last-update-entregas').textContent = formattedDate;
             
-            // This would be replaced with your actual data fetching logic
-            // For demo purposes, we'll simulate data loading
-            setTimeout(() => {
-                // These elements would be populated by your script.js
-                document.getElementById('totalPedidos').textContent = '1,248';
-                document.getElementById('totalEntregas').textContent = '982';
-            }, 1000);
         });
-
-        // This is where you would integrate with your script.js
-        // The following is just a placeholder for the actual integration
-        document.addEventListener('DOMContentLoaded', function() {
-            // Simulate loading data from your script.js
-            // In your actual implementation, you would have:
-            // const totalEntregasEl = document.getElementById('totalEntregas');
-            // const totalPedidosEl = document.getElementById('totalPedidos');
-            // And these would be updated by your script.js
-            
-            // For demo purposes, we'll set some values
-            setTimeout(() => {
-                document.getElementById('totalEntregas').textContent = '982';
-                document.getElementById('totalPedidos').textContent = '1,248';
-                
-                // Calculate pending deliveries (just for demo)
-                const entregas = 982;
-                const pedidos = 1248;
-                const pendentes = pedidos - entregas;
-                document.querySelectorAll('p')[4].textContent = pendentes; // Pending deliveries
-                
-                // Calculate efficiency (just for demo)
-                const eficiencia = Math.round((entregas / pedidos) * 100);
-                document.querySelectorAll('p')[5].textContent = eficiencia + '%';
-            }, 1500);
-        });
+        
     </script>
-    
-    <!-- Your actual script would be included here -->
-    <script src="public/js/script.js"></script>
+    <script src="src/db.js"></script>
+   <script src="public/js/script.js"></script>
 </body>
 </html>

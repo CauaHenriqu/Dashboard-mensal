@@ -658,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('submitPasswordBtn')?.addEventListener('click', () => {
-        if (passwordInput && passwordInput.value === 'Cabral123*') {
+        if (passwordInput && passwordInput.value === '3323') {
             isValorVisible = true;
             updateValorDisplay();
             if (passwordModal) passwordModal.classList.add('hidden');
