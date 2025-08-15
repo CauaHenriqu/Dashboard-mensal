@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Interno - Motoristas, Veículos e Cargas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#dc2626',
+                            light: '#ef4444',
+                            dark: '#b91c1c'
+                        },
+                        secondary: {
+                            DEFAULT: '#2563eb',
+                            light: '#3b82f6',
+                            dark: '#1d4ed8'
+                        },
+                        dark: {
+                            800: '#1a1a1a',
+                            700: '#262626',
+                            600: '#333333'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .status-em-rota { background-color: #3b82f6; color: white; }
+        .status-fora-escala { background-color: #64748b; color: white; }
+        .status-day-off { background-color: #f59e0b; color: white; }
+        .status-folga { background-color: #10b981; color: white; }
+        .status-atestado { background-color: #8b5cf6; color: white; }
+        .status-falta { background-color: #ef4444; color: white; }
+        .status-rota-finalizada { background-color: #14b8a6; color: white; }
+        .status-nao-apontado { background-color: #94a3b8; color: white; }
+        
+        .veiculo-apto { background-color: #10b981; color: white; }
+        .veiculo-quebrado { background-color: #ef4444; color: white; }
+        .veiculo-manutencao { background-color: #f59e0b; color: white; }
+        
+        .carga-pendente { background-color: #f59e0b; color: white; }
+        .carga-em-transito { background-color: #3b82f6; color: white; }
+        .carga-entregue { background-color: #10b981; color: white; }
+        .carga-cancelada { background-color: #ef4444; color: white; }
+        
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Controle Interno</h1>
+            <p class="text-gray-600">Gerenciamento de motoristas, auxiliares, veículos e cargas</p>
+        </header>
+        
+        <!-- Tabs Navigation -->
+        <div class="flex border-b border-gray-200 mb-6">
+            <button id="tabPessoal" class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-primary text-primary">
+                <i class="fas fa-users mr-2"></i>Pessoal
+            </button>
+            <button id="tabVeiculos" class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                <i class="fas fa-truck mr-2"></i>Veículos
+            </button>
+            <button id="tabDestinos" class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                <i class="fas fa-map-marker-alt mr-2"></i>Destinos
+            </button>
+            <button id="tabCargas" class="tab-button px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                <i class="fas fa-boxes mr-2"></i>Cargas
+            </button>
+        </div>
+        
+        <!-- Tab Contents -->
+        <div id="tabContents">
+            <!-- Pessoal Tab -->
+            <div id="pessoalContent" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800">
+                            <i class="fas fa-users mr-2"></i>Pessoal
+                        </h2>
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <input type="text" id="personnelSearch" placeholder="Buscar..."
+                                        class="bg-white border border-gray-300 text-gray-800 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+                            </div>
+                            <button id="addPersonBtn" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center">
+                                <i class="fas fa-plus mr-2"></i>Adicionar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Personnel Form (hidden by default) -->
+                    <div id="personForm" class="hidden mb-6 bg-gray-50 p-4 rounded-lg">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Cadastrar Novo</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                                <input type="text" id="personName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Função</label>
+                                <select id="personRole" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Selecione</option>
+                                    <option value="Motorista">Motorista</option>
+                                    <option value="Auxiliar">Auxiliar</option>
+                                    <option value="Supervisor">Supervisor</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Estação de Trabalho</label>
+                                <input type="text" id="personStation" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select id="personStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Selecione</option>
+                                    <option value="Em Rota">Em Rota</option>
+                                    <option value="Fora de Escala - CD">Fora de Escala - CD</option>
+                                    <option value="Day Off">Day Off</option>
+                                    <option value="Folga">Folga</option>
+                                    <option value="Atestado">Atestado</option>
+                                    <option value="Falta">Falta</option>
+                                    <option value="Rota Finalizada">Rota Finalizada</option>
+                                    <option value="Não apontado">Não apontado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end space-x-2">
+                            <button id="cancelPersonBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">Cancelar</button>
+                            <button id="savePersonBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Salvar</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Personnel List -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Função</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estação</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="personnelList" class="bg-white divide-y divide-gray-200">
+                                <!-- Sample data -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Veículos Tab -->
+            <div id="veiculosContent" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800">
+                            <i class="fas fa-truck mr-2"></i>Veículos
+                        </h2>
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <input type="text" id="vehiclesSearch" placeholder="Buscar..."
+                                        class="bg-white border border-gray-300 text-gray-800 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+                            </div>
+                            <button id="addVehicleBtn" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center">
+                                <i class="fas fa-plus mr-2"></i>Adicionar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Vehicle Form (hidden by default) -->
+                    <div id="vehicleForm" class="hidden mb-6 bg-gray-50 p-4 rounded-lg">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Cadastrar Veículo</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Placa</label>
+                                <input type="text" id="vehiclePlate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ABC-1234">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Marca/Modelo</label>
+                                <input type="text" id="vehicleBrand" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Peso (kg)</label>
+                                <input type="number" id="vehicleWeight" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                                <select id="vehicleState" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Selecione</option>
+                                    <option value="Apto">Apto</option>
+                                    <option value="Quebrado">Quebrado</option>
+                                    <option value="Em manutenção">Em manutenção</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                                <textarea id="vehicleNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end space-x-2">
+                            <button id="cancelVehicleBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">Cancelar</button>
+                            <button id="saveVehicleBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Salvar</button>
+                        </div>
+                        </div>
+                    
+                    <!-- Vehicle List -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placa</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marca</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peso</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vehiclesList" class="bg-white divide-y divide-gray-200">
+                                <!-- Sample data -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Destinos Tab -->
+            <div id="destinosContent" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800">
+                            <i class="fas fa-map-marker-alt mr-2"></i>Destinos
+                        </h2>
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <input type="text" id="destinationsSearch" placeholder="Buscar..."
+                                        class="bg-white border border-gray-300 text-gray-800 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+                            </div>
+                            <button id="addDestinationBtn" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center">
+                                <i class="fas fa-plus mr-2"></i>Adicionar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Destination Form (hidden by default) -->
+                    <div id="destinationForm" class="hidden mb-6 bg-gray-50 p-4 rounded-lg">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Cadastrar Novo Destino</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Destino</label>
+                                <input type="text" id="destinationName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: CD São Paulo">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Carga ERP</label>
+                                <input type="text" id="destinationERP" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Código ERP">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Quantidade de Entregas</label>
+                                <input type="number" id="destinationDeliveries" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Pedidos</label>
+                                <input type="text" id="destinationOrders" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Números dos pedidos">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Peso (kg)</label>
+                                <input type="number" id="destinationWeight" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                                <textarea id="destinationNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end space-x-2">
+                            <button id="cancelDestinationBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">Cancelar</button>
+                            <button id="saveDestinationBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Salvar</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Destinations List -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destino</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Carga ERP</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entregas</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedidos</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peso (kg)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="destinationsList" class="bg-white divide-y divide-gray-200">
+                                <!-- Sample data -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cargas Tab -->
+            <div id="cargasContent" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800">
+                            <i class="fas fa-boxes mr-2"></i>Cargas
+                        </h2>
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <input type="text" id="loadsSearch" placeholder="Buscar..."
+                                        class="bg-white border border-gray-300 text-gray-800 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+                            </div>
+                            <button id="exportPdfBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                                <i class="fas fa-file-pdf mr-2"></i>Exportar PDF
+                            </button>
+                            <button id="addLoadBtn" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center">
+                                <i class="fas fa-plus mr-2"></i>Criar Carga
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Load Form (hidden by default) -->
+                    <div id="loadForm" class="hidden mb-6 bg-gray-50 p-4 rounded-lg">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Criar Nova Carga</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Motorista</label>
+                                <select id="loadDriver" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Selecione o motorista</option>
+                                    <option value="1">João Silva</option>
+                                    <option value="2">Carlos Oliveira</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Ajudante</label>
+                                <select id="loadHelper" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Selecione o ajudante</option>
+                                    <option value="1">Maria Souza</option>
+                                    <option value="2">Ana Santos</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Veículo</label>
+                                <select id="loadVehicle" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Selecione o veículo</option>
+                                    <option value="1">ABC-1234 (Volvo FH 540)</option>
+                                    <option value="2">DEF-5678 (Mercedes Actros)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Destino</label>
+                                <select id="loadDestination" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Selecione o destino</option>
+                                    <option value="1">CD São Paulo</option>
+                                    <option value="2">CD Rio de Janeiro</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Data/Hora de Saída</label>
+                                <input type="datetime-local" id="loadDeparture" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                                <textarea id="loadNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end space-x-2">
+                            <button id="cancelLoadBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">Cancelar</button>
+                            <button id="saveLoadBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Salvar</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Loads List -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motorista</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Veículo</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destino</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Saída</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loadsList" class="bg-white divide-y divide-gray-200">
+                                <!-- Sample data -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics Section -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-red-100 text-red-600">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Motoristas em Rota</h3>
+                        <p class="text-2xl font-semibold text-gray-800" id="motoristasEmRota">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <i class="fas fa-truck text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Veículos Aptos</h3>
+                        <p class="text-2xl font-semibold text-gray-800" id="veiculosAptos">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <i class="fas fa-boxes text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Cargas Pendentes</h3>
+                        <p class="text-2xl font-semibold text-gray-800" id="cargasPendentes">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <i class="fas fa-shipping-fast text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Cargas em Trânsito</h3>
+                        <p class="text-2xl font-semibold text-gray-800" id="cargasEmTransito">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Personnel Status Chart -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-chart-pie mr-2 text-primary"></i>Status do Pessoal
+                </h2>
+                <canvas id="personnelStatusChart" class="w-full h-80"></canvas>
+            </div>
+
+            <!-- Vehicle Status Chart -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-chart-bar mr-2 text-primary"></i>Status dos Veículos
+                </h2>
+                <canvas id="vehicleStatusChart" class="w-full h-80"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Personnel Modal -->
+    <div id="editPersonModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Editar Pessoa</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                        <input type="text" id="editPersonName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Função</label>
+                        <select id="editPersonRole" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Selecione</option>
+                            <option value="Motorista">Motorista</option>
+                            <option value="Auxiliar">Auxiliar</option>
+                            <option value="Supervisor">Supervisor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Estação</label>
+                        <input type="text" id="editPersonStation" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="editPersonStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Selecione</option>
+                            <option value="Em Rota">Em Rota</option>
+                            <option value="Fora de Escala - CD">Fora de Escala - CD</option>
+                            <option value="Day Off">Day Off</option>
+                            <option value="Folga">Folga</option>
+                            <option value="Atestado">Atestado</option>
+                            <option value="Falta">Falta</option>
+                            <option value="Rota Finalizada">Rota Finalizada</option>
+                            <option value="Não apontado">Não apontado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end space-x-2">
+                    <button id="cancelEditPersonBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">Cancelar</button>
+                    <button id="saveEditPersonBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Vehicle Modal -->
+    <div id="editVehicleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Editar Veículo</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Placa</label>
+                        <input type="text" id="editVehiclePlate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Marca/Modelo</label>
+                        <input type="text" id="editVehicleBrand" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Peso (kg)</label>
+                        <input type="number" id="editVehicleWeight" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                        <select id="editVehicleState" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Selecione</option>
+                            <option value="Apto">Apto</option>
+                            <option value="Quebrado">Quebrado</option>
+                            <option value="Em manutenção">Em manutenção</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                        <textarea id="editVehicleNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end space-x-2">
+                    <button id="cancelEditVehicleBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">Cancelar</button>
+                    <button id="saveEditVehicleBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Destination Modal -->
+    <div id="editDestinationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Editar Destino</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Destino</label>
+                        <input type="text" id="editDestinationName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Carga ERP</label>
+                        <input type="text" id="editDestinationERP" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Quantidade de Entregas</label>
+                        <input type="number" id="editDestinationDeliveries" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pedidos</label>
+                        <input type="text" id="editDestinationOrders" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Peso (kg)</label>
+                        <input type="number" id="editDestinationWeight" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                        <textarea id="editDestinationNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end space-x-2">
+                    <button id="cancelEditDestinationBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">Cancelar</button>
+                    <button id="saveEditDestinationBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Load Modal -->
+    <div id="editLoadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Editar Carga</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Motorista <span class="text-red-500">*</span></label>
+                        <select id="editLoadDriver" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Selecione o motorista</option>
+                            <option value="1"></option>
+                            <option value="2">Carlos Oliveira</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ajudante <span class="text-red-500">*</span></label>
+                        <select id="editLoadHelper" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Selecione o ajudante</option>
+                            <option value="1">Maria Souza</option>
+                            <option value="2">Ana Santos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Veículo <span class="text-red-500">*</span></label>
+                        <select id="editLoadVehicle" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Selecione o veículo</option>
+                            <option value="1">ABC-1234 (Volvo FH 540)</option>
+                            <option value="2">DEF-5678 (Mercedes Actros)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Destino <span class="text-red-500">*</span></label>
+                        <select id="editLoadDestination" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Selecione o destino</option>
+                            <option value="1">CD São Paulo</option>
+                            <option value="2">CD Rio de Janeiro</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Data/Hora de Saída</label>
+                        <input type="datetime-local" id="editLoadDeparture" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="editLoadStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Pendente">Pendente</option>
+                            <option value="Em Trânsito">Em Trânsito</option>
+                            <option value="Entregue">Entregue</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                        <textarea id="editLoadNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end space-x-2">
+                    <button id="cancelEditLoadBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">Cancelar</button>
+                    <button id="saveEditLoadBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize charts
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Tab functionality
+            const tabs = ['pessoal', 'veiculos', 'destinos', 'cargas'];
+            tabs.forEach(tab => {
+                const tabButton = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+                const tabContent = document.getElementById(`${tab}Content`);
+                
+                tabButton.addEventListener('click', () => {
+                    // Hide all tab contents and remove active class from all buttons
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    document.querySelectorAll('.tab-button').forEach(button => {
+                        button.classList.remove('border-primary', 'text-primary');
+                        button.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    // Show selected tab content and add active class to button
+                    tabContent.classList.remove('hidden');
+                    tabButton.classList.add('border-primary', 'text-primary');
+                    tabButton.classList.remove('border-transparent', 'text-gray-500');
+                });
+            });
+        });
+        
+        // Search functionality
+        document.getElementById('personnelSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#personnelList tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        document.getElementById('vehiclesSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#vehiclesList tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+        
+        document.getElementById('destinationsSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#destinationsList tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+        
+        document.getElementById('loadsSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#loadsList tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        // Toggle forms
+        document.getElementById('addPersonBtn').addEventListener('click', function() {
+            document.getElementById('personForm').classList.toggle('hidden');
+            document.getElementById('vehicleForm').classList.add('hidden');
+            document.getElementById('destinationForm').classList.add('hidden');
+            document.getElementById('loadForm').classList.add('hidden');
+        });
+        
+        document.getElementById('addVehicleBtn').addEventListener('click', function() {
+            document.getElementById('vehicleForm').classList.toggle('hidden');
+            document.getElementById('personForm').classList.add('hidden');
+            document.getElementById('destinationForm').classList.add('hidden');
+            document.getElementById('loadForm').classList.add('hidden');
+        });
+        
+        document.getElementById('addDestinationBtn').addEventListener('click', function() {
+            document.getElementById('destinationForm').classList.toggle('hidden');
+            document.getElementById('personForm').classList.add('hidden');
+            document.getElementById('vehicleForm').classList.add('hidden');
+            document.getElementById('loadForm').classList.add('hidden');
+        });
+        
+        document.getElementById('addLoadBtn').addEventListener('click', function() {
+            document.getElementById('loadForm').classList.toggle('hidden');
+            document.getElementById('personForm').classList.add('hidden');
+            document.getElementById('vehicleForm').classList.add('hidden');
+            document.getElementById('destinationForm').classList.add('hidden');
+        });
+        
+        document.getElementById('cancelPersonBtn').addEventListener('click', function() {
+            document.getElementById('personForm').classList.add('hidden');
+        });
+        
+        document.getElementById('cancelVehicleBtn').addEventListener('click', function() {
+            document.getElementById('vehicleForm').classList.add('hidden');
+        });
+        
+        document.getElementById('cancelDestinationBtn').addEventListener('click', function() {
+            document.getElementById('destinationForm').classList.add('hidden');
+        });
+        
+        document.getElementById('cancelLoadBtn').addEventListener('click', function() {
+            document.getElementById('loadForm').classList.add('hidden');
+        });
+
+        // Save new person
+        document.getElementById('savePersonBtn').addEventListener('click', async function() {
+            const name = document.getElementById('personName').value;
+            const role = document.getElementById('personRole').value;
+            const station = document.getElementById('personStation').value;
+            const status = document.getElementById('personStatus').value;
+
+            if (!name || !role || !station || !status) {
+                alert('Preencha todos os campos!');
+                return;
+            }
+
+            // Save to IndexedDB
+            const personData = {
+                nome: name,
+                funcao: role,
+                estacao: station,
+                status: status
+            };
+
+            try {
+                const id = await saveToDB('pessoal', personData);
+                
+                // Add to table
+                const table = document.getElementById('personnelList');
+                const newRow = table.insertRow();
+                
+                newRow.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${role}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${station}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded-full text-xs ${getStatusClass(status)}">${status}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${id}" data-type="pessoal"><i class="fas fa-edit"></i></button>
+                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${id}" data-type="pessoal"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+
+                // Clear form
+                document.getElementById('personName').value = '';
+                document.getElementById('personRole').value = '';
+                document.getElementById('personStation').value = '';
+                document.getElementById('personStatus').value = '';
+                document.getElementById('personForm').classList.add('hidden');
+
+                // Add event listeners to new buttons
+                addEditDeleteListeners(newRow);
+                alert('Pessoa cadastrada com sucesso!');
+                
+                // Update dashboard and charts
+                updateDashboard();
+                updateCharts();
+            } catch (error) {
+                console.error('Erro ao salvar pessoa:', error);
+                alert('Erro ao salvar pessoa. Por favor, tente novamente.');
+            }
+        });
+        
+        
+        // Save new vehicle
+        document.getElementById('saveVehicleBtn').addEventListener('click', async function() {
+            const plate = document.getElementById('vehiclePlate').value;
+            const brand = document.getElementById('vehicleBrand').value;
+            const weight = document.getElementById('vehicleWeight').value;
+            const state = document.getElementById('vehicleState').value;
+            const notes = document.getElementById('vehicleNotes').value;
+
+            if (!plate || !brand || !weight || !state) {
+                alert('Preencha todos os campos obrigatórios!');
+                return;
+            }
+
+            // Save to IndexedDB
+            const vehicleData = {
+                placa: plate,
+                marca: brand,
+                peso: weight + ' kg',
+                estado: state,
+                observacoes: notes
+            };
+
+            try {
+                const id = await saveToDB('veiculos', vehicleData);
+                
+                // Add to table
+                const table = document.getElementById('vehiclesList');
+                const newRow = table.insertRow();
+                
+                newRow.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${plate}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${brand}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${weight} kg</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded-full text-xs ${getVehicleStateClass(state)}">${state}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${id}" data-type="veiculos"><i class="fas fa-edit"></i></button>
+                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${id}" data-type="veiculos"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+
+                // Add to vehicle select fields in load forms
+                const loadVehicleSelect = document.getElementById('loadVehicle');
+                const editLoadVehicleSelect = document.getElementById('editLoadVehicle');
+                
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${plate} (${brand}, ${state})`;
+                
+                loadVehicleSelect.appendChild(option.cloneNode(true));
+                editLoadVehicleSelect.appendChild(option);
+
+                // Clear form
+                document.getElementById('vehiclePlate').value = '';
+                document.getElementById('vehicleBrand').value = '';
+                document.getElementById('vehicleWeight').value = '';
+                document.getElementById('vehicleState').value = '';
+                document.getElementById('vehicleNotes').value = '';
+                document.getElementById('vehicleForm').classList.add('hidden');
+
+                // Add event listeners to new buttons
+                addEditDeleteListeners(newRow);
+                alert('Veículo cadastrado com sucesso!');
+                
+                // Update dashboard and charts
+                updateDashboard();
+                updateCharts();
+            } catch (error) {
+                console.error('Erro ao salvar veículo:', error);
+                alert('Erro ao salvar veículo. Por favor, tente novamente.');
+            }
+        });
+        
+        // Save new destination
+        document.getElementById('saveDestinationBtn').addEventListener('click', async function() {
+            const name = document.getElementById('destinationName').value;
+            const erp = document.getElementById('destinationERP').value;
+            const deliveries = document.getElementById('destinationDeliveries').value;
+            const orders = document.getElementById('destinationOrders').value;
+            const weight = document.getElementById('destinationWeight').value;
+            const notes = document.getElementById('destinationNotes').value;
+
+            if (!name || !erp || !deliveries || !orders || !weight) {
+                alert('Preencha todos os campos obrigatórios!');
+                return;
+            }
+
+            // Save to IndexedDB
+            const destinationData = {
+                destino: name,
+                erp: erp,
+                entregas: deliveries,
+                pedidos: orders,
+                peso: weight,
+                observacoes: notes
+            };
+
+            try {
+                const id = await saveToDB('destinos', destinationData);
+                
+                // Add to table
+                const table = document.getElementById('destinationsList');
+                const newRow = table.insertRow();
+                
+                newRow.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${erp}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${deliveries}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${orders}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${weight}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${id}" data-type="destinos"><i class="fas fa-edit"></i></button>
+                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${id}" data-type="destinos"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+
+                // Clear form
+                document.getElementById('destinationName').value = '';
+                document.getElementById('destinationERP').value = '';
+                document.getElementById('destinationDeliveries').value = '';
+                document.getElementById('destinationOrders').value = '';
+                document.getElementById('destinationWeight').value = '';
+                document.getElementById('destinationNotes').value = '';
+                document.getElementById('destinationForm').classList.add('hidden');
+
+                // Add event listeners to new buttons
+                addEditDeleteListeners(newRow);
+                alert('Destino cadastrado com sucesso!');
+                
+                // Update dashboard and charts
+                updateDashboard();
+                updateCharts();
+            } catch (error) {
+                console.error('Erro ao salvar destino:', error);
+                alert('Erro ao salvar destino. Por favor, tente novamente.');
+            }
+        });
+        // Save new load
+        document.getElementById('saveLoadBtn').addEventListener('click', async function() {
+            const driver = document.getElementById('loadDriver').value;
+            const helper = document.getElementById('loadHelper').value;
+            const vehicle = document.getElementById('loadVehicle').value;
+            const destination = document.getElementById('loadDestination').value;
+            const departure = document.getElementById('loadDeparture').value;
+            const notes = document.getElementById('loadNotes').value;
+
+            if (!driver || !vehicle || !destination || !departure) {
+                alert('Preencha todos os campos obrigatórios!');
+                return;
+            }
+
+            // Get selected options text
+            const driverText = document.getElementById('loadDriver').options[document.getElementById('loadDriver').selectedIndex].text;
+            const helperText = helper ? document.getElementById('loadHelper').options[document.getElementById('loadHelper').selectedIndex].text : 'Nenhum';
+            const vehicleText = document.getElementById('loadVehicle').options[document.getElementById('loadVehicle').selectedIndex].text;
+            const destinationText = document.getElementById('loadDestination').options[document.getElementById('loadDestination').selectedIndex].text;
+            
+            // Format date
+            const departureDate = new Date(departure);
+            const formattedDate = departureDate.toLocaleDateString('pt-BR') + ' ' + departureDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+
+            // Generate load code
+            const loadCount = document.querySelectorAll('#loadsList tr').length + 1;
+            const loadCode = 'CAR-' + loadCount.toString().padStart(3, '0');
+
+            // Save to IndexedDB
+            const loadData = {
+                codigo: loadCode,
+                motorista: driverText,
+                ajudante: helperText,
+                veiculo: vehicleText,
+                destino: destinationText,
+                saida: formattedDate,
+                status: 'Pendente',
+                observacoes: notes
+            };
+
+            try {
+                const id = await saveToDB('cargas', loadData);
+                
+                // Add to table
+                const table = document.getElementById('loadsList');
+                const newRow = table.insertRow();
+                
+                newRow.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${loadCode}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${driverText}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${vehicleText}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${destinationText}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${formattedDate}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded-full text-xs ${getLoadStatusClass('Pendente', vehicleText)}">Pendente</span>
+                        ${getVehicleStatusIcon(vehicleText)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${id}" data-type="cargas"><i class="fas fa-edit"></i></button>
+                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${id}" data-type="cargas"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                newRow.dataset.id = id;
+
+                // Clear form
+                document.getElementById('loadDriver').value = '';
+                document.getElementById('loadHelper').value = '';
+                document.getElementById('loadVehicle').value = '';
+                document.getElementById('loadDestination').value = '';
+                document.getElementById('loadDeparture').value = '';
+                document.getElementById('loadNotes').value = '';
+                document.getElementById('loadForm').classList.add('hidden');
+
+                // Add event listeners to new buttons
+                addEditDeleteListeners(newRow);
+                alert('Carga criada com sucesso!');
+                
+                // Update dashboard and charts
+                updateDashboard();
+                updateCharts();
+            } catch (error) {
+                console.error('Erro ao salvar carga:', error);
+                alert('Erro ao salvar carga. Por favor, tente novamente.');
+            }
+        });
+
+        // Sample function to get status class
+        function getStatusClass(status) {
+            const statusClasses = {
+                'Em Rota': 'status-em-rota',
+                'Fora de Escala - CD': 'status-fora-escala',
+                'Day Off': 'status-day-off',
+                'Folga': 'status-folga',
+                'Atestado': 'status-atestado',
+                'Falta': 'status-falta',
+                'Rota Finalizada': 'status-rota-finalizada',
+                'Não apontado': 'status-nao-apontado'
+            };
+            return statusClasses[status] || 'bg-gray-100 text-gray-800';
+        }
+        
+        // Sample function to get vehicle state class
+        function getVehicleStateClass(state) {
+            const stateClasses = {
+                'Apto': 'veiculo-apto',
+                'Quebrado': 'veiculo-quebrado',
+                'Em manutenção': 'veiculo-manutencao'
+            };
+            return stateClasses[state] || 'bg-gray-100 text-gray-800';
+        }
+        
+        // Function to get load status class
+        function getLoadStatusClass(status, vehicleText) {
+            // Extract vehicle state from vehicle text if available
+            let vehicleState = null;
+            if (vehicleText) {
+                // Try to extract vehicle state from text in parentheses
+                const stateMatch = vehicleText.match(/\(([^)]+)\)/);
+                if (stateMatch && stateMatch[1]) {
+                    vehicleState = stateMatch[1];
+                }
+            }
+            
+            // If vehicle is broken, return red color
+            if (vehicleState === 'Quebrado') {
+                return 'carga-cancelada'; // Red color for broken vehicles
+            }
+            
+            // If vehicle is in maintenance, return yellow color
+            if (vehicleState === 'Em manutenção') {
+                return 'carga-pendente'; // Yellow color for vehicles in maintenance
+            }
+            
+            // Otherwise, use the regular status colors
+            const statusClasses = {
+                'Pendente': 'carga-pendente',
+                'Em Trânsito': 'carga-em-transito',
+                'Entregue': 'carga-entregue',
+                'Cancelada': 'carga-cancelada'
+            };
+            return statusClasses[status] || 'bg-gray-100 text-gray-800';
+        }
+        
+        // Function to get vehicle status icon with tooltip
+        function getVehicleStatusIcon(vehicleText) {
+            // Extract vehicle state from vehicle text if available
+            let vehicleState = null;
+            if (vehicleText) {
+                // Try to extract vehicle state from text in parentheses
+                const stateMatch = vehicleText.match(/\(([^)]+)\)/);
+                if (stateMatch && stateMatch[1]) {
+                    // Split by comma and take the last part as the vehicle state
+                    const parts = stateMatch[1].split(', ');
+                    vehicleState = parts[parts.length - 1];
+                }
+            }
+            
+            // Return appropriate icon with tooltip
+            if (vehicleState === 'Quebrado') {
+                return '<i class="fas fa-exclamation-triangle text-red-500 ml-2" title="O carro está quebrado"></i>';
+            } else if (vehicleState === 'Em manutenção') {
+                return '<i class="fas fa-tools text-yellow-500 ml-2" title="O carro está em manutenção"></i>';
+            }
+            
+            // No icon for other states (including "Apto")
+            return '';
+        }
+
+        // Function to add event listeners to edit/delete buttons
+        function addEditDeleteListeners(row) {
+            // Edit button
+            row.querySelector('.fa-edit').closest('button').addEventListener('click', function() {
+                const cells = row.querySelectorAll('td');
+                const isPerson = row.closest('#personnelList') !== null;
+                const isVehicle = row.closest('#vehiclesList') !== null;
+                const isDestination = row.closest('#destinationsList') !== null;
+                const isLoad = row.closest('#loadsList') !== null;
+                
+                if (isPerson) {
+                    document.getElementById('editPersonName').value = cells[0].textContent;
+                    document.getElementById('editPersonRole').value = cells[1].textContent;
+                    document.getElementById('editPersonStation').value = cells[2].textContent;
+                    document.getElementById('editPersonStatus').value = cells[3].textContent.trim();
+                    currentEditRow = row;
+                    document.getElementById('editPersonModal').classList.remove('hidden');
+                } else if (isVehicle) {
+                    document.getElementById('editVehiclePlate').value = cells[0].textContent;
+                    document.getElementById('editVehicleBrand').value = cells[1].textContent;
+                    document.getElementById('editVehicleWeight').value = cells[2].textContent.replace(' kg', '');
+                    document.getElementById('editVehicleState').value = cells[3].textContent.trim();
+                    currentEditRow = row;
+                    document.getElementById('editVehicleModal').classList.remove('hidden');
+                } else if (isDestination) {
+                    document.getElementById('editDestinationName').value = cells[0].textContent;
+                    document.getElementById('editDestinationERP').value = cells[1].textContent;
+                    document.getElementById('editDestinationDeliveries').value = cells[2].textContent;
+                    document.getElementById('editDestinationOrders').value = cells[3].textContent;
+                    document.getElementById('editDestinationWeight').value = cells[4].textContent;
+                    currentEditRow = row;
+                    document.getElementById('editDestinationModal').classList.remove('hidden');
+                } else if (isLoad) {
+                    document.getElementById('editLoadDriver').value = cells[1].textContent;
+                    document.getElementById('editLoadVehicle').value = cells[2].textContent;
+                    document.getElementById('editLoadDestination').value = cells[3].textContent;
+                    document.getElementById('editLoadDeparture').value = ''; // formato de data/hora pode ser tratado aqui
+                    document.getElementById('editLoadStatus').value = cells[5].textContent.trim();
+                    currentEditRow = row;
+                    document.getElementById('editLoadModal').classList.remove('hidden');
+                }
+            });
+
+            // Delete button
+            row.querySelector('.fa-trash').closest('button').addEventListener('click', async function () {
+                if (confirm('Deseja realmente excluir este registro?')) {
+                    const id = this.closest('button').dataset.id;
+                    const type = this.closest('button').dataset.type;
+                    
+                    try {
+                        await deleteFromDB(type, parseInt(id));
+                        row.remove();
+                        alert('Registro excluído com sucesso!');
+                    } catch (error) {
+                        console.error('Erro ao excluir registro:', error);
+                        alert('Erro ao excluir registro. Por favor, tente novamente.');
+                    }
+                }
+            });
+        }
+
+        // Variável global para armazenar a linha atual em edição
+        let currentEditRow = null;
+
+        // Salvar edição de pessoa
+        document.getElementById('saveEditPersonBtn').addEventListener('click', async function () {
+            if (currentEditRow) {
+                const cells = currentEditRow.querySelectorAll('td');
+                const id = currentEditRow.querySelector('.edit-btn').dataset.id;
+                
+                // Update in IndexedDB
+                const personData = {
+                    id: parseInt(id),
+                    nome: document.getElementById('editPersonName').value,
+                    funcao: document.getElementById('editPersonRole').value,
+                    estacao: document.getElementById('editPersonStation').value,
+                    status: document.getElementById('editPersonStatus').value
+                };
+                
+                try {
+                    await updateInDB('pessoal', personData);
+                    
+                    // Update in table
+                    cells[0].textContent = document.getElementById('editPersonName').value;
+                    cells[1].textContent = document.getElementById('editPersonRole').value;
+                    cells[2].textContent = document.getElementById('editPersonStation').value;
+                    cells[3].innerHTML = `<span class="px-2 py-1 rounded-full text-xs ${getStatusClass(document.getElementById('editPersonStatus').value)}">${document.getElementById('editPersonStatus').value}</span>`;
+                    document.getElementById('editPersonModal').classList.add('hidden');
+                    alert('Pessoa atualizada com sucesso!');
+                } catch (error) {
+                    console.error('Erro ao atualizar pessoa:', error);
+                    alert('Erro ao atualizar pessoa. Por favor, tente novamente.');
+                }
+            }
+        });
+
+        // Salvar edição de veículo
+        document.getElementById('saveEditVehicleBtn').addEventListener('click', async function () {
+            if (currentEditRow) {
+                const cells = currentEditRow.querySelectorAll('td');
+                const id = currentEditRow.querySelector('.edit-btn').dataset.id;
+                
+                // Update in IndexedDB
+                const vehicleData = {
+                    id: parseInt(id),
+                    placa: document.getElementById('editVehiclePlate').value,
+                    marca: document.getElementById('editVehicleBrand').value,
+                    peso: document.getElementById('editVehicleWeight').value + ' kg',
+                    estado: document.getElementById('editVehicleState').value,
+                    observacoes: document.getElementById('editVehicleNotes').value
+                };
+                
+                try {
+                    await updateInDB('veiculos', vehicleData);
+                    
+                    // Update in table
+                    cells[0].textContent = document.getElementById('editVehiclePlate').value;
+                    cells[1].textContent = document.getElementById('editVehicleBrand').value;
+                    cells[2].textContent = document.getElementById('editVehicleWeight').value + ' kg';
+                    cells[3].innerHTML = `<span class="px-2 py-1 rounded-full text-xs ${getVehicleStateClass(document.getElementById('editVehicleState').value)}">${document.getElementById('editVehicleState').value}</span>`;
+                    
+                    // Update vehicle select fields in load forms
+                    const loadVehicleSelect = document.getElementById('loadVehicle');
+                    const editLoadVehicleSelect = document.getElementById('editLoadVehicle');
+                    
+                    const vehicleId = parseInt(currentEditRow.querySelector('.edit-btn').dataset.id);
+                    const plate = document.getElementById('editVehiclePlate').value;
+                    const brand = document.getElementById('editVehicleBrand').value;
+                    const state = document.getElementById('editVehicleState').value;
+                    
+                    // Update options in loadVehicleSelect
+                    const loadOption = Array.from(loadVehicleSelect.options).find(option => parseInt(option.value) === vehicleId);
+                    if (loadOption) {
+                        loadOption.textContent = `${plate} (${brand}, ${state})`;
+                    }
+                    
+                    // Update options in editLoadVehicleSelect
+                    const editOption = Array.from(editLoadVehicleSelect.options).find(option => parseInt(option.value) === vehicleId);
+                    if (editOption) {
+                        editOption.textContent = `${plate} (${brand}, ${state})`;
+                    }
+                    
+                    document.getElementById('editVehicleModal').classList.add('hidden');
+                    alert('Veículo atualizado com sucesso!');
+                } catch (error) {
+                    console.error('Erro ao atualizar veículo:', error);
+                    alert('Erro ao atualizar veículo. Por favor, tente novamente.');
+                }
+            }
+        });
+
+        // Salvar edição de destino
+        document.getElementById('saveEditDestinationBtn').addEventListener('click', async function () {
+            if (currentEditRow) {
+                const cells = currentEditRow.querySelectorAll('td');
+                const id = currentEditRow.querySelector('.edit-btn').dataset.id;
+                
+                // Update in IndexedDB
+                const destinationData = {
+                    id: parseInt(id),
+                    destino: document.getElementById('editDestinationName').value,
+                    erp: document.getElementById('editDestinationERP').value,
+                    entregas: document.getElementById('editDestinationDeliveries').value,
+                    pedidos: document.getElementById('editDestinationOrders').value,
+                    peso: document.getElementById('editDestinationWeight').value,
+                    observacoes: document.getElementById('editDestinationNotes').value
+                };
+                
+                try {
+                    await updateInDB('destinos', destinationData);
+                    
+                    // Update in table
+                    cells[0].textContent = document.getElementById('editDestinationName').value;
+                    cells[1].textContent = document.getElementById('editDestinationERP').value;
+                    cells[2].textContent = document.getElementById('editDestinationDeliveries').value;
+                    cells[3].textContent = document.getElementById('editDestinationOrders').value;
+                    cells[4].textContent = document.getElementById('editDestinationWeight').value;
+                    document.getElementById('editDestinationModal').classList.add('hidden');
+                    alert('Destino atualizado com sucesso!');
+                } catch (error) {
+                    console.error('Erro ao atualizar destino:', error);
+                    alert('Erro ao atualizar destino. Por favor, tente novamente.');
+                }
+            }
+        });
+
+        // Salvar edição de carga
+        document.getElementById('saveEditLoadBtn').addEventListener('click', async function () {
+            if (currentEditRow) {
+                const cells = currentEditRow.querySelectorAll('td');
+                const id = currentEditRow.querySelector('.edit-btn').dataset.id;
+                
+                // Get selected options text
+                const driverText = document.getElementById('editLoadDriver').options[document.getElementById('editLoadDriver').selectedIndex].text;
+                const vehicleText = document.getElementById('editLoadVehicle').options[document.getElementById('editLoadVehicle').selectedIndex].text;
+                const destinationText = document.getElementById('editLoadDestination').options[document.getElementById('editLoadDestination').selectedIndex].text;
+                
+                // Update in IndexedDB
+                const loadData = {
+                    id: parseInt(id),
+                    codigo: cells[0].textContent,
+                    motorista: driverText,
+                    ajudante: '', // This is not in the edit form
+                    veiculo: vehicleText,
+                    destino: destinationText,
+                    saida: document.getElementById('editLoadDeparture').value,
+                    status: document.getElementById('editLoadStatus').value,
+                    observacoes: document.getElementById('editLoadNotes').value
+                };
+                
+                try {
+                    await updateInDB('cargas', loadData);
+                    
+                    // Update in table
+                    cells[1].textContent = driverText;
+                    cells[2].textContent = vehicleText;
+                    cells[3].textContent = destinationText;
+                    cells[4].textContent = document.getElementById('editLoadDeparture').value;
+                    cells[5].innerHTML = `<span class="px-2 py-1 rounded-full text-xs ${getLoadStatusClass(document.getElementById('editLoadStatus').value, vehicleText)}">${document.getElementById('editLoadStatus').value}</span>${getVehicleStatusIcon(vehicleText)}`;
+                    document.getElementById('editLoadModal').classList.add('hidden');
+                    alert('Carga atualizada com sucesso!');
+                } catch (error) {
+                    console.error('Erro ao atualizar carga:', error);
+                    alert('Erro ao atualizar carga. Por favor, tente novamente.');
+                }
+            }
+        });
+
+        // Botões cancelar dos modais
+        document.getElementById('cancelEditPersonBtn').addEventListener('click', function () {
+            document.getElementById('editPersonModal').classList.add('hidden');
+        });
+        document.getElementById('cancelEditVehicleBtn').addEventListener('click', function () {
+            document.getElementById('editVehicleModal').classList.add('hidden');
+        });
+        document.getElementById('cancelEditDestinationBtn').addEventListener('click', function () {
+            document.getElementById('editDestinationModal').classList.add('hidden');
+        });
+        document.getElementById('cancelEditLoadBtn').addEventListener('click', function () {
+            document.getElementById('editLoadModal').classList.add('hidden');
+        });
+
+        // Adicionar listeners aos registros já existentes
+        document.querySelectorAll('#personnelList tr, #vehiclesList tr, #destinationsList tr, #loadsList tr').forEach(row => {
+            addEditDeleteListeners(row);
+        });
+
+        // ====== Função para salvar dados no IndexedDB ======
+    async function saveData() {
+        // This function is now handled by the observer and individual save functions
+        // We'll keep it for backward compatibility but it won't be used for saving to IndexedDB
+    }
+
+    // ====== Função para carregar dados do IndexedDB ======
+    async function loadData() {
+        try {
+            // Load personnel
+            const pessoalData = await loadFromDB('pessoal');
+            const personnelList = document.getElementById('personnelList');
+            personnelList.innerHTML = '';
+            pessoalData.forEach(p => {
+                const row = personnelList.insertRow();
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${p.nome}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${p.funcao}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${p.estacao}</td>
+                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs ${getStatusClass(p.status)}">${p.status}</span></td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${p.id}" data-type="pessoal"><i class="fas fa-edit"></i></button>
+                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${p.id}" data-type="pessoal"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                addEditDeleteListeners(row);
+            });
+
+            // Load vehicles
+            const veiculosData = await loadFromDB('veiculos');
+            const vehiclesList = document.getElementById('vehiclesList');
+            vehiclesList.innerHTML = '';
+            veiculosData.forEach(v => {
+                const row = vehiclesList.insertRow();
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${v.placa}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${v.marca}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${v.peso}</td>
+                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs ${getVehicleStateClass(v.estado)}">${v.estado}</span></td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${v.id}" data-type="veiculos"><i class="fas fa-edit"></i></button>
+                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${v.id}" data-type="veiculos"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                addEditDeleteListeners(row);
+            });
+
+            // Load destinations
+            const destinosData = await loadFromDB('destinos');
+            const destinationsList = document.getElementById('destinationsList');
+            const loadDestinationSelect = document.getElementById('loadDestination');
+            const editLoadDestinationSelect = document.getElementById('editLoadDestination');
+            
+            destinationsList.innerHTML = '';
+            // Clear existing options except the first one
+            loadDestinationSelect.innerHTML = '<option value="">Selecione o destino</option>';
+            editLoadDestinationSelect.innerHTML = '<option value="">Selecione o destino</option>';
+            
+            destinosData.forEach(d => {
+                const row = destinationsList.insertRow();
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${d.destino}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${d.erp}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${d.entregas}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${d.pedidos}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${d.peso}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${d.id}" data-type="destinos"><i class="fas fa-edit"></i></button>
+                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${d.id}" data-type="destinos"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                addEditDeleteListeners(row);
+                
+                // Add option to load form select
+                const option = document.createElement('option');
+                option.value = d.id;
+                option.textContent = d.destino;
+                loadDestinationSelect.appendChild(option.cloneNode(true));
+                editLoadDestinationSelect.appendChild(option);
+            });
+
+            // Load loads
+            const cargasData = await loadFromDB('cargas');
+            const loadsList = document.getElementById('loadsList');
+            loadsList.innerHTML = '';
+            cargasData.forEach(c => {
+                const row = loadsList.insertRow();
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${c.codigo}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${c.motorista}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${c.veiculo}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${c.destino}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${c.saida}</td>
+                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs ${getLoadStatusClass(c.status, c.veiculo)}">${c.status}</span>${getVehicleStatusIcon(c.veiculo)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${c.id}" data-type="cargas"><i class="fas fa-edit"></i></button>
+                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${c.id}" data-type="cargas"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                row.dataset.id = c.id;
+                addEditDeleteListeners(row);
+            });
+            
+            // Populate driver and vehicle select fields
+            const allPessoalData = await loadFromDB('pessoal');
+            const allVeiculosData = await loadFromDB('veiculos');
+            
+            const loadDriverSelect = document.getElementById('loadDriver');
+            const editLoadDriverSelect = document.getElementById('editLoadDriver');
+            const loadHelperSelect = document.getElementById('loadHelper');
+            const editLoadHelperSelect = document.getElementById('editLoadHelper');
+            const loadVehicleSelect = document.getElementById('loadVehicle');
+            const editLoadVehicleSelect = document.getElementById('editLoadVehicle');
+            
+            // Clear existing options except the first one
+            loadDriverSelect.innerHTML = '<option value="">Selecione o motorista</option>';
+            editLoadDriverSelect.innerHTML = '<option value="">Selecione o motorista</option>';
+            loadHelperSelect.innerHTML = '<option value="">Selecione o ajudante</option>';
+            editLoadHelperSelect.innerHTML = '<option value="">Selecione o ajudante</option>';
+            loadVehicleSelect.innerHTML = '<option value="">Selecione o veículo</option>';
+            editLoadVehicleSelect.innerHTML = '<option value="">Selecione o veículo</option>';
+            
+            // Filter personnel to only include drivers and helpers
+            const drivers = allPessoalData.filter(p => p.funcao === 'Motorista');
+            const helpers = allPessoalData.filter(p => p.funcao === 'Auxiliar');
+            
+            // Populate driver select fields
+            drivers.forEach(d => {
+                const option = document.createElement('option');
+                option.value = d.id;
+                option.textContent = d.nome;
+                
+                loadDriverSelect.appendChild(option.cloneNode(true));
+                editLoadDriverSelect.appendChild(option.cloneNode(true));
+            });
+            
+            // Populate helper select fields
+            helpers.forEach(h => {
+                const option = document.createElement('option');
+                option.value = h.id;
+                option.textContent = h.nome;
+                
+                loadHelperSelect.appendChild(option.cloneNode(true));
+                editLoadHelperSelect.appendChild(option.cloneNode(true));
+            });
+            
+            // Populate vehicle select fields
+            allVeiculosData.forEach(v => {
+                const option = document.createElement('option');
+                option.value = v.id;
+                option.textContent = `${v.placa} (${v.marca}, ${v.estado})`;
+                
+                loadVehicleSelect.appendChild(option.cloneNode(true));
+                editLoadVehicleSelect.appendChild(option.cloneNode(true));
+            });
+        } catch (error) {
+            console.error('Erro ao carregar dados:', error);
+        }
+    }
+
+    // ====== Database Implementation (IndexedDB) ======
+    const DB_NAME = 'ControleInternoDB';
+    const DB_VERSION = 1;
+    let db;
+
+    // Open database
+    function openDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onerror = function(event) {
+                console.error('Erro ao abrir o banco de dados:', event.target.error);
+                reject(event.target.error);
+            };
+
+            request.onsuccess = function(event) {
+                db = event.target.result;
+                console.log('Banco de dados aberto com sucesso');
+                resolve(db);
+            };
+
+            request.onupgradeneeded = function(event) {
+                db = event.target.result;
+
+                // Create object stores
+                if (!db.objectStoreNames.contains('pessoal')) {
+                    const pessoalStore = db.createObjectStore('pessoal', { keyPath: 'id', autoIncrement: true });
+                }
+
+                if (!db.objectStoreNames.contains('veiculos')) {
+                    const veiculosStore = db.createObjectStore('veiculos', { keyPath: 'id', autoIncrement: true });
+                }
+
+                if (!db.objectStoreNames.contains('destinos')) {
+                    const destinosStore = db.createObjectStore('destinos', { keyPath: 'id', autoIncrement: true });
+                }
+
+                if (!db.objectStoreNames.contains('cargas')) {
+                    const cargasStore = db.createObjectStore('cargas', { keyPath: 'id', autoIncrement: true });
+                }
+
+                console.log('Estrutura do banco de dados criada');
+            };
+        });
+    }
+
+    // Save data to IndexedDB
+    function saveToDB(storeName, data) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const objectStore = transaction.objectStore(storeName);
+            const request = objectStore.add(data);
+
+            request.onsuccess = function(event) {
+                console.log('Dados salvos com sucesso:', event.target.result);
+                resolve(event.target.result); // Returns the key of the added object
+            };
+
+            request.onerror = function(event) {
+                console.error('Erro ao salvar dados:', event.target.error);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    // Update data in IndexedDB
+    function updateInDB(storeName, data) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const objectStore = transaction.objectStore(storeName);
+            const request = objectStore.put(data);
+
+            request.onsuccess = function(event) {
+                console.log('Dados atualizados com sucesso');
+                resolve();
+            };
+
+            request.onerror = function(event) {
+                console.error('Erro ao atualizar dados:', event.target.error);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    // Delete data from IndexedDB
+    function deleteFromDB(storeName, id) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const objectStore = transaction.objectStore(storeName);
+            const request = objectStore.delete(id);
+
+            request.onsuccess = function(event) {
+                console.log('Dados excluídos com sucesso');
+                resolve();
+            };
+
+            request.onerror = function(event) {
+                console.error('Erro ao excluir dados:', event.target.error);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    // Load data from IndexedDB
+    function loadFromDB(storeName) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readonly');
+            const objectStore = transaction.objectStore(storeName);
+            const request = objectStore.getAll();
+
+            request.onsuccess = function(event) {
+                console.log('Dados carregados com sucesso:', event.target.result);
+                resolve(event.target.result);
+            };
+
+            request.onerror = function(event) {
+                console.error('Erro ao carregar dados:', event.target.error);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    // ====== Atualizar saveData sempre que houver alteração ======
+    const observer = new MutationObserver(saveData);
+    observer.observe(document.getElementById('personnelList'), { childList: true, subtree: true });
+    observer.observe(document.getElementById('vehiclesList'), { childList: true, subtree: true });
+    observer.observe(document.getElementById('destinationsList'), { childList: true, subtree: true });
+    observer.observe(document.getElementById('loadsList'), { childList: true, subtree: true });
+
+    // ====== Carregar dados ao iniciar ======
+    // Initialize charts
+    let personnelChart = null;
+    let vehicleChart = null;
+    
+    function initializeCharts() {
+        // Personnel Status Chart
+        const personnelCtx = document.getElementById('personnelStatusChart').getContext('2d');
+        personnelChart = new Chart(personnelCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Em Rota', 'Fora de Escala', 'Day Off', 'Folga', 'Atestado', 'Falta', 'Rota Finalizada'],
+                datasets: [{
+                    data: [0, 0, 0, 0, 0, 0, 0],
+                    backgroundColor: [
+                        '#3b82f6', '#64748b', '#f59e0b', '#10b981',
+                        '#8b5cf6', '#ef4444', '#14b8a6'
+                    ],
+                    borderColor: '#1f2937',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#6b7280'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Vehicle Status Chart
+        const vehicleCtx = document.getElementById('vehicleStatusChart').getContext('2d');
+        vehicleChart = new Chart(vehicleCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Aptos', 'Em Manutenção', 'Quebrados'],
+                datasets: [{
+                    label: 'Veículos',
+                    data: [0, 0, 0],
+                    backgroundColor: [
+                        '#10b981',
+                        '#f59e0b',
+                        '#ef4444'
+                    ],
+                    borderColor: '#1f2937',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#6b7280'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // Initial update
+        updateCharts();
+    }
+    
+    function updateDashboard() {
+        // Motoristas em Rota
+        const motoristasEmRota = document.querySelectorAll('#personnelList .status-em-rota').length;
+        document.querySelector('#motoristasEmRota').textContent = motoristasEmRota;
+
+        // Veículos Aptos
+        const veiculosAptos = document.querySelectorAll('#vehiclesList .veiculo-apto').length;
+        document.querySelector('#veiculosAptos').textContent = veiculosAptos;
+
+        // Cargas Pendentes
+        const cargasPendentes = document.querySelectorAll('#loadsList .carga-pendente').length;
+        document.querySelector('#cargasPendentes').textContent = cargasPendentes;
+
+        // Cargas em Trânsito
+        const cargasEmTransito = document.querySelectorAll('#loadsList .carga-em-transito').length;
+        document.querySelector('#cargasEmTransito').textContent = cargasEmTransito;
+        
+        // Update charts if they exist
+        if (personnelChart && vehicleChart) {
+            updateCharts();
+        }
+    }
+    
+    function updateCharts() {
+        // Update personnel chart
+        const personnelRows = document.querySelectorAll('#personnelList tr');
+        const statusCounts = {
+            'Em Rota': 0,
+            'Fora de Escala - CD': 0,
+            'Day Off': 0,
+            'Folga': 0,
+            'Atestado': 0,
+            'Falta': 0,
+            'Rota Finalizada': 0
+        };
+        
+        personnelRows.forEach(row => {
+            const statusCell = row.cells[3];
+            if (statusCell) {
+                const statusText = statusCell.textContent.trim();
+                if (statusCounts.hasOwnProperty(statusText)) {
+                    statusCounts[statusText]++;
+                }
+            }
+        });
+        
+        personnelChart.data.datasets[0].data = [
+            statusCounts['Em Rota'],
+            statusCounts['Fora de Escala - CD'],
+            statusCounts['Day Off'],
+            statusCounts['Folga'],
+            statusCounts['Atestado'],
+            statusCounts['Falta'],
+            statusCounts['Rota Finalizada']
+        ];
+        personnelChart.update();
+        
+        // Update vehicle chart
+        const vehicleRows = document.querySelectorAll('#vehiclesList tr');
+        const vehicleStatusCounts = {
+            'Apto': 0,
+            'Em manutenção': 0,
+            'Quebrado': 0
+        };
+        
+        vehicleRows.forEach(row => {
+            const statusCell = row.cells[3];
+            if (statusCell) {
+                const statusText = statusCell.textContent.trim();
+                if (vehicleStatusCounts.hasOwnProperty(statusText)) {
+                    vehicleStatusCounts[statusText]++;
+                }
+            }
+        });
+        
+        vehicleChart.data.datasets[0].data = [
+            vehicleStatusCounts['Apto'],
+            vehicleStatusCounts['Em manutenção'],
+            vehicleStatusCounts['Quebrado']
+        ];
+        vehicleChart.update();
+    }
+
+    // Chamar sempre que os dados mudarem
+    const observerStats = new MutationObserver(updateDashboard);
+    observerStats.observe(document.getElementById('personnelList'), { childList: true, subtree: true });
+    observerStats.observe(document.getElementById('vehiclesList'), { childList: true, subtree: true });
+    observerStats.observe(document.getElementById('loadsList'), { childList: true, subtree: true });
+
+    // Atualizar quando a página carregar
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            await openDatabase();
+            await loadData();
+            initializeCharts();
+            updateDashboard();
+        } catch (error) {
+            console.error('Erro ao inicializar o banco de dados:', error);
+        }
+    });
+    
+    // PDF Export functionality
+    document.getElementById('exportPdfBtn').addEventListener('click', async function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add title
+        doc.setFontSize(18);
+        doc.text('Relatório de Cargas', 105, 20, null, null, 'center');
+        
+        // Get destination data for additional information
+        const destinosData = await loadFromDB('destinos');
+        
+        // Get table data
+        const table = document.getElementById('loadsList');
+        const rows = table.querySelectorAll('tr');
+        
+        // Prepare data for PDF
+        const data = [];
+        const headers = ['Código', 'Motorista', 'Veículo', 'Destino', 'Saída', 'Status', 'Carga ERP', 'Entregas', 'Peso (kg)'];
+        
+        rows.forEach((row, index) => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length > 0) {
+                // Get destination name from the row
+                const destinoName = cells[3].textContent;
+                
+                // Find destination data
+                const destino = destinosData.find(d => d.destino === destinoName);
+                
+                const rowData = [];
+                // Include the first 6 cells (excluding the actions cell)
+                for (let i = 0; i < 6; i++) {
+                    if (i === 5) {
+                        // For status column, get the text content without the span tags
+                        const statusSpan = cells[i].querySelector('span');
+                        rowData.push(statusSpan ? statusSpan.textContent : cells[i].textContent);
+                    } else {
+                        rowData.push(cells[i].textContent);
+                    }
+                }
+                
+                // Add additional destination information
+                rowData.push(destino ? destino.erp : '');
+                rowData.push(destino ? destino.entregas : '');
+                rowData.push(destino ? destino.peso : '');
+                
+                data.push(rowData);
+            }
+        });
+        
+        // Generate PDF table
+        doc.autoTable({
+            head: [headers],
+            body: data,
+            startY: 30,
+            styles: {
+                fontSize: 8
+            },
+            headStyles: {
+                fillColor: [220, 38, 38] // Primary color
+            }
+        });
+        
+        // Save the PDF
+        doc.save('relatorio-cargas.pdf');
+    });
+    
+    // Make status badges clickable to edit load status
+    function makeStatusEditable() {
+        const statusCells = document.querySelectorAll('#loadsList td:nth-child(6)');
+        
+        statusCells.forEach(cell => {
+            const statusSpan = cell.querySelector('span');
+            if (statusSpan) {
+                // Create a wrapper div to hold the status span and dropdown
+                const wrapper = document.createElement('div');
+                wrapper.className = 'relative inline-block';
+                
+                // Create dropdown menu
+                const dropdown = document.createElement('div');
+                dropdown.className = 'absolute z-10 hidden bg-white border border-gray-200 rounded-md shadow-lg mt-1';
+                dropdown.style.minWidth = '160px';
+                
+                // Status options
+                const statusOptions = ['Pendente', 'Em Trânsito', 'Entregue', 'Cancelada'];
+                
+                statusOptions.forEach(option => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer';
+                    optionElement.textContent = option;
+                    optionElement.addEventListener('click', function() {
+                        // Update status in database
+                        const row = cell.closest('tr');
+                        const id = row.querySelector('.edit-btn').dataset.id;
+                        const driverName = row.cells[1].textContent;
+                        
+                        // Update in IndexedDB
+                        updateLoadStatus(parseInt(id), option, driverName);
+                        
+                        // Update in table
+                        statusSpan.className = `px-2 py-1 rounded-full text-xs ${getLoadStatusClass(option, row.cells[2].textContent)}`;
+                        statusSpan.textContent = option;
+                        
+                        // Add vehicle status icon
+                        const vehicleStatusIcon = getVehicleStatusIcon(row.cells[2].textContent);
+                        statusSpan.parentNode.innerHTML = statusSpan.outerHTML + vehicleStatusIcon;
+                        
+                        // Hide dropdown
+                        dropdown.classList.add('hidden');
+                    });
+                    dropdown.appendChild(optionElement);
+                });
+                
+                // Replace status span with wrapper
+                cell.innerHTML = '';
+                wrapper.appendChild(statusSpan);
+                wrapper.appendChild(dropdown);
+                cell.appendChild(wrapper);
+                
+                // Make status span clickable
+                statusSpan.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!wrapper.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            }
+        });
+    }
+    
+    // Function to update load status in IndexedDB
+    async function updateLoadStatus(id, newStatus, driverName) {
+        try {
+            // Get the current load data
+            const transaction = db.transaction(['cargas'], 'readonly');
+            const objectStore = transaction.objectStore('cargas');
+            const request = objectStore.get(id);
+            
+            request.onsuccess = function(event) {
+                const loadData = event.target.result;
+                if (loadData) {
+                    // Update the status
+                    loadData.status = newStatus;
+                    
+                    // Save updated data
+                    updateInDB('cargas', loadData);
+                    
+                    // Update driver status if needed
+                    updateDriverStatus(driverName || loadData.motorista, newStatus);
+                    
+                    // Update the table display with the correct color
+                    const row = document.querySelector(`#loadsList tr[data-id="${id}"]`);
+                    if (row) {
+                        const statusCell = row.cells[5];
+                        if (statusCell) {
+                            statusCell.innerHTML = `<span class="px-2 py-1 rounded-full text-xs ${getLoadStatusClass(newStatus, loadData.veiculo)}">${newStatus}</span>${getVehicleStatusIcon(loadData.veiculo)}`;
+                        }
+                    }
+                }
+            };
+            
+            request.onerror = function(event) {
+                console.error('Erro ao obter dados da carga:', event.target.error);
+            };
+        } catch (error) {
+            console.error('Erro ao atualizar status da carga:', error);
+        }
+    }
+    
+    // Function to update driver status based on load status
+    async function updateDriverStatus(driverName, loadStatus) {
+        try {
+            // Get all personnel
+            const pessoalData = await loadFromDB('pessoal');
+            
+            // Find the driver
+            const driver = pessoalData.find(p => p.nome === driverName);
+            
+            if (driver) {
+                // Get all loads
+                const cargasData = await loadFromDB('cargas');
+                
+                // Update driver status based on load status
+                let newStatus = driver.status;
+                
+                if (loadStatus === 'Pendente') {
+                    newStatus = 'Não apontado';
+                } else if (loadStatus === 'Em Trânsito') {
+                    newStatus = 'Em Rota';
+                } else if (loadStatus === 'Entregue') {
+                    // Check if driver has any other loads that are not delivered
+                    const driverLoads = cargasData.filter(c => c.motorista === driverName);
+                    const hasOpenLoads = driverLoads.some(c => c.status !== 'Entregue' && c.status !== 'Cancelada');
+                    
+                    // If no open loads, set to "Rota finalizada", otherwise keep "Em Rota"
+                    newStatus = hasOpenLoads ? 'Em Rota' : 'Rota Finalizada';
+                }
+                
+                // Only update if status has changed
+                if (driver.status !== newStatus) {
+                    driver.status = newStatus;
+                    await updateInDB('pessoal', driver);
+                    
+                    // Update the personnel table
+                    updatePersonnelTable();
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar status do motorista:', error);
+        }
+    }
+    
+    // Function to update personnel table
+    async function updatePersonnelTable() {
+        try {
+            // Load personnel
+            const pessoalData = await loadFromDB('pessoal');
+            const personnelList = document.getElementById('personnelList');
+            personnelList.innerHTML = '';
+            pessoalData.forEach(p => {
+                const row = personnelList.insertRow();
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${p.nome}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${p.funcao}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${p.estacao}</td>
+                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs ${getStatusClass(p.status)}">${p.status}</span></td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${p.id}" data-type="pessoal"><i class="fas fa-edit"></i></button>
+                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${p.id}" data-type="pessoal"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                addEditDeleteListeners(row);
+            });
+        } catch (error) {
+            console.error('Erro ao atualizar tabela de pessoal:', error);
+        }
+    }
+    
+    // Call makeStatusEditable after loading data
+    const originalLoadData = loadData;
+    loadData = async function() {
+        await originalLoadData();
+        makeStatusEditable();
+    };
+    
+    // Also call makeStatusEditable after adding a new load
+    const originalAddEditDeleteListeners = addEditDeleteListeners;
+    addEditDeleteListeners = function(row) {
+        originalAddEditDeleteListeners(row);
+        
+        // If this is a load row, make its status editable
+        if (row.closest('#loadsList')) {
+            // Use setTimeout to ensure the row is fully rendered
+            setTimeout(() => {
+                makeStatusEditable();
+            }, 0);
+        }
+    };
+    </script>
+</body>
+</html>
