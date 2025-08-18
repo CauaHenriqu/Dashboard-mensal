@@ -277,6 +277,10 @@
                             <button id="addDestinationBtn" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center">
                                 <i class="fas fa-plus mr-2"></i>Adicionar
                             </button>
+                            <input type="file" id="importDestinosInput" accept=".xlsx,.xls,.csv" class="hidden" />
+<button id="importDestinosBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+    <i class="fas fa-file-import mr-2"></i>Importar Destinos
+</button>
                         </div>
                     </div>
                     
@@ -635,7 +639,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Motorista <span class="text-red-500">*</span></label>
                         <select id="editLoadDriver" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">Selecione o motorista</option>
-                            <option value="1"></option>
+                            <option value="1">João Silva</option>
                             <option value="2">Carlos Oliveira</option>
                         </select>
                     </div>
@@ -1202,13 +1206,43 @@
                     currentEditRow = row;
                     document.getElementById('editDestinationModal').classList.remove('hidden');
                 } else if (isLoad) {
-                    document.getElementById('editLoadDriver').value = cells[1].textContent;
-                    document.getElementById('editLoadVehicle').value = cells[2].textContent;
-                    document.getElementById('editLoadDestination').value = cells[3].textContent;
-                    document.getElementById('editLoadDeparture').value = ''; // formato de data/hora pode ser tratado aqui
-                    document.getElementById('editLoadStatus').value = cells[5].textContent.trim();
-                    currentEditRow = row;
-                    document.getElementById('editLoadModal').classList.remove('hidden');
+                    const driverSelect = document.getElementById('editLoadDriver');
+    const vehicleSelect = document.getElementById('editLoadVehicle');
+    const destinationSelect = document.getElementById('editLoadDestination');
+    const statusSelect = document.getElementById('editLoadStatus');
+    const departureInput = document.getElementById('editLoadDeparture');
+    const notesInput = document.getElementById('editLoadNotes');
+
+    // Selecionar pelo texto
+    Array.from(driverSelect.options).forEach(opt => {
+        opt.selected = opt.text === cells[1].textContent;
+    });
+    Array.from(vehicleSelect.options).forEach(opt => {
+        opt.selected = opt.text === cells[2].textContent;
+    });
+    Array.from(destinationSelect.options).forEach(opt => {
+        opt.selected = opt.text === cells[3].textContent;
+    });
+    Array.from(statusSelect.options).forEach(opt => {
+        opt.selected = opt.text === cells[5].innerText.trim();
+    });
+
+    // Preencher data/hora se possível
+    const saida = cells[4].textContent;
+    if (saida) {
+        // Converter para formato datetime-local
+        const [date, time] = saida.split(' ');
+        if (date && time) {
+            const [day, month, year] = date.split('/');
+            const [hour, minute] = time.split(':');
+            departureInput.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour}:${minute}`;
+        }
+    }
+    // Preencher observações se existirem (opcional, se armazenado)
+    notesInput.value = ''; // Ajuste se armazenar observações
+
+    currentEditRow = row;
+    document.getElementById('editLoadModal').classList.remove('hidden');
                 }
             });
 
@@ -1323,6 +1357,7 @@
         // Salvar edição de destino
         document.getElementById('saveEditDestinationBtn').addEventListener('click', async function () {
             if (currentEditRow) {
+               
                 const cells = currentEditRow.querySelectorAll('td');
                 const id = currentEditRow.querySelector('.edit-btn').dataset.id;
                 
@@ -1424,157 +1459,264 @@
 
     // ====== Função para carregar dados do IndexedDB ======
     async function loadData() {
-        try {
-            // Load personnel
-            const pessoalData = await loadFromDB('pessoal');
-            const personnelList = document.getElementById('personnelList');
-            personnelList.innerHTML = '';
-            pessoalData.forEach(p => {
-                const row = personnelList.insertRow();
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap">${p.nome}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${p.funcao}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${p.estacao}</td>
-                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs ${getStatusClass(p.status)}">${p.status}</span></td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${p.id}" data-type="pessoal"><i class="fas fa-edit"></i></button>
-                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${p.id}" data-type="pessoal"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-                addEditDeleteListeners(row);
-            });
+    // --- PRÉ-CADASTRO DE MOTORISTAS, AUXILIARES E DESTINOS ---
+    const pessoalExistente = await loadFromDB('pessoal');
+    if (pessoalExistente.length === 0) {
+        // Motoristas
+        await saveToDB('pessoal', { nome: 'DAVI ALMEIDA CARDOSO', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'USELI DA SILVA PEREIRA', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'TIAGO SANTOS PASSOS', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'RICARDO COSTA DE JESUS', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'ISAIAS NASCIMENTO DA CONCEIÇÃO', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'CLAUDIO CORREIA DA CONCEIÇÃO', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'JOSE PAULO TADEU SANTOS', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'PEDRO HENRIQUE SANTOS CONCEIÇÃO', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'JEAN DA COSTA SILVA', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'ALESSANDRO ANDRADE DA SILVA E SILVA', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'DENILSON GALDINO GONCALVES', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'CLAUDIO MARTINS DOS SANTOS', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'JOCIVALDO SANTIAGO NASCIMENTO', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'DAMASIO DE SANTANA DOS SANTOS', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'MARIVALDO LOPES LINS', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'JEFFERSON ADRIANO MONTEIRO', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'MAURICIO SANTOS DE JESUS', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'ISAIAS DE JESUS NOBRE', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'YURI SILVA DOS SANTOS', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'ANDERSON ESTRELLADO DA COSTA', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'REGINALDO SOUZA DA SILVA', funcao: 'Motorista', estacao: '', status: 'Fora de Escala - CD' });
 
-            // Load vehicles
-            const veiculosData = await loadFromDB('veiculos');
-            const vehiclesList = document.getElementById('vehiclesList');
-            vehiclesList.innerHTML = '';
-            veiculosData.forEach(v => {
-                const row = vehiclesList.insertRow();
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap">${v.placa}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${v.marca}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${v.peso}</td>
-                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs ${getVehicleStateClass(v.estado)}">${v.estado}</span></td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${v.id}" data-type="veiculos"><i class="fas fa-edit"></i></button>
-                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${v.id}" data-type="veiculos"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-                addEditDeleteListeners(row);
-            });
+        // Auxiliares
+        await saveToDB('pessoal', { nome: 'GABRIEL FERREIRA SALES', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'FERNANDO DA COSTA SILVA', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'ALVARO SANTANA TELES', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'MATHEUS DA CONCEIÇÃO DOS SANTOS', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'HILDERLAN MACHADO SILVA', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'MARCOS VINICIUS DE OLIVEIRA RAMOS', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'EBERTON SANTOS DOS SANTOS', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'YAN SILVA SANTOS', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'IVISSON CREQUEIRA DA CONCEIÇÃO', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'IURI ROSA OLIVEIRA DE SANTANA', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'RIAN SENA DA CONCEIÇÃO', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'DIEGO DE JESUS NOBRE', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'JONATAS SANTOS RIBEIRO', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'SELTON NASCIMENTO MOREIRA', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+        await saveToDB('pessoal', { nome: 'BRUNO SANTANA SALES', funcao: 'Auxiliar', estacao: '', status: 'Fora de Escala - CD' });
+    }
 
-            // Load destinations
-            const destinosData = await loadFromDB('destinos');
-            const destinationsList = document.getElementById('destinationsList');
-            const loadDestinationSelect = document.getElementById('loadDestination');
-            const editLoadDestinationSelect = document.getElementById('editLoadDestination');
-            
-            destinationsList.innerHTML = '';
-            // Clear existing options except the first one
-            loadDestinationSelect.innerHTML = '<option value="">Selecione o destino</option>';
-            editLoadDestinationSelect.innerHTML = '<option value="">Selecione o destino</option>';
-            
-            destinosData.forEach(d => {
-                const row = destinationsList.insertRow();
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap">${d.destino}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${d.erp}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${d.entregas}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${d.pedidos}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${d.peso}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${d.id}" data-type="destinos"><i class="fas fa-edit"></i></button>
-                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${d.id}" data-type="destinos"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-                addEditDeleteListeners(row);
-                
-                // Add option to load form select
-                const option = document.createElement('option');
-                option.value = d.id;
-                option.textContent = d.destino;
-                loadDestinationSelect.appendChild(option.cloneNode(true));
-                editLoadDestinationSelect.appendChild(option);
-            });
+    const veiculosExistente = await loadFromDB('veiculos');
+    if (veiculosExistente.length === 0) {
+        const vehicles = [
+            { placa: 'RCZ8E32', marca: 'IVECO/TECTOR 9-190' },
+            { placa: 'RDA9G44', marca: 'IVECO/TECTOR 9-190' },
+            { placa: 'RPT4D41', marca: 'VW/11.180 DRC 4X2' },
+            { placa: 'RPT5I54', marca: 'VW/11.180 DRC 4X2' },
+            { placa: 'RPZ2E45', marca: 'VW/DELIVERY 11.180' },
+            { placa: 'RPZ7C64', marca: 'VW/DELIVERY 11.180' },
+            { placa: 'RPS2B81', marca: 'VW/EXPRESS DRF 4X2' },
+            { placa: 'RPS8C34', marca: 'VW/EXPRESS DRF 4X2' },
+            { placa: 'SJK5I47', marca: 'VW/DELIVERY 11.180' },
+            { placa: 'SGE4I43', marca: 'FORD TRANSIT 470 CL' },
+            { placa: 'SGE5A64', marca: 'FORD TRANSIT 470 CL' },
+            { placa: 'SGE5A70', marca: 'FORD TRANSIT 470 CL' },
+            { placa: 'SGE5A75', marca: 'FORD TRANSIT 470 CL' },
+            { placa: 'SGE5A78', marca: 'FORD TRANSIT 470 CL' },
+            { placa: 'SGE5A83', marca: 'FORD TRANSIT 470 CL' },
+            { placa: 'SGE5B06', marca: 'FORD TRANSIT 470 CL' },
+            { placa: 'SGE5B18', marca: 'FORD TRANSIT 470 CL' },
+            { placa: 'SGE5B23', marca: 'FORD TRANSIT 470 CL' },
+            { placa: 'SGF4A88', marca: 'FORD TRANSIT 470 CL' }
+        ];
 
-            // Load loads
-            const cargasData = await loadFromDB('cargas');
-            const loadsList = document.getElementById('loadsList');
-            loadsList.innerHTML = '';
-            cargasData.forEach(c => {
-                const row = loadsList.insertRow();
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap">${c.codigo}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${c.motorista}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${c.veiculo}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${c.destino}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${c.saida}</td>
-                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs ${getLoadStatusClass(c.status, c.veiculo)}">${c.status}</span>${getVehicleStatusIcon(c.veiculo)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${c.id}" data-type="cargas"><i class="fas fa-edit"></i></button>
-                        <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${c.id}" data-type="cargas"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-                row.dataset.id = c.id;
-                addEditDeleteListeners(row);
+        for (const v of vehicles) {
+            await saveToDB('veiculos', {
+                placa: v.placa,
+                marca: v.marca,
+                peso: 5000,
+                estado: 'Apto'
             });
-            
-            // Populate driver and vehicle select fields
-            const allPessoalData = await loadFromDB('pessoal');
-            const allVeiculosData = await loadFromDB('veiculos');
-            
-            const loadDriverSelect = document.getElementById('loadDriver');
-            const editLoadDriverSelect = document.getElementById('editLoadDriver');
-            const loadHelperSelect = document.getElementById('loadHelper');
-            const editLoadHelperSelect = document.getElementById('editLoadHelper');
-            const loadVehicleSelect = document.getElementById('loadVehicle');
-            const editLoadVehicleSelect = document.getElementById('editLoadVehicle');
-            
-            // Clear existing options except the first one
-            loadDriverSelect.innerHTML = '<option value="">Selecione o motorista</option>';
-            editLoadDriverSelect.innerHTML = '<option value="">Selecione o motorista</option>';
-            loadHelperSelect.innerHTML = '<option value="">Selecione o ajudante</option>';
-            editLoadHelperSelect.innerHTML = '<option value="">Selecione o ajudante</option>';
-            loadVehicleSelect.innerHTML = '<option value="">Selecione o veículo</option>';
-            editLoadVehicleSelect.innerHTML = '<option value="">Selecione o veículo</option>';
-            
-            // Filter personnel to only include drivers and helpers
-            const drivers = allPessoalData.filter(p => p.funcao === 'Motorista');
-            const helpers = allPessoalData.filter(p => p.funcao === 'Auxiliar');
-            
-            // Populate driver select fields
-            drivers.forEach(d => {
-                const option = document.createElement('option');
-                option.value = d.id;
-                option.textContent = d.nome;
-                
-                loadDriverSelect.appendChild(option.cloneNode(true));
-                editLoadDriverSelect.appendChild(option.cloneNode(true));
-            });
-            
-            // Populate helper select fields
-            helpers.forEach(h => {
-                const option = document.createElement('option');
-                option.value = h.id;
-                option.textContent = h.nome;
-                
-                loadHelperSelect.appendChild(option.cloneNode(true));
-                editLoadHelperSelect.appendChild(option.cloneNode(true));
-            });
-            
-            // Populate vehicle select fields
-            allVeiculosData.forEach(v => {
-                const option = document.createElement('option');
-                option.value = v.id;
-                option.textContent = `${v.placa} (${v.marca}, ${v.estado})`;
-                
-                loadVehicleSelect.appendChild(option.cloneNode(true));
-                editLoadVehicleSelect.appendChild(option.cloneNode(true));
-            });
-        } catch (error) {
-            console.error('Erro ao carregar dados:', error);
         }
     }
+
+    const destinosExistentes = await loadFromDB('destinos');
+    if (destinosExistentes.length === 0) {
+        await saveToDB('destinos', { destino: 'METROPOLITANA EXPRESS', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'SSA NORTE', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'SSA OESTE', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'SSA CENTRO LESTE', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'RIBEIRA PAULO AFONSO', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'LAURO LINHA', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'CAMACARI CANDEIAS', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'ALAGOINHAS', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'SERRINHA EUCLIDES', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'STO DE JESUS', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'ITABERABA IRECE', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'SSA EXPRESS', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'SB JUAZEIRO', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'MERCANTIL JUAZEIRO', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'NOVO MIX VCT', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'REDES FEIRA', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'MERCANTIL FEIRA', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'HIPERIDEAL DE MONAN', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'AGENDAMENTO LINHA LAURO', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'JACOBINA CAPIM GROSS', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'SSA NT CURTO PRAZO', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'FEIRA DE SANTANA EXPRESS FEIRA', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+        await saveToDB('destinos', { destino: 'SAUIPE SA', erp: '', entregas: '', pedidos: '', peso: '', observacoes: '' });
+    }
+
+    // --- FIM DO PRÉ-CADASTRO ---
+
+    try {
+        // Load personnel
+        const pessoalData = await loadFromDB('pessoal');
+        const personnelList = document.getElementById('personnelList');
+        personnelList.innerHTML = '';
+        pessoalData.forEach(p => {
+            const row = personnelList.insertRow();
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">${p.nome}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${p.funcao}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${p.estacao}</td>
+                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs ${getStatusClass(p.status)}">${p.status}</span></td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${p.id}" data-type="pessoal"><i class="fas fa-edit"></i></button>
+                    <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${p.id}" data-type="pessoal"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            addEditDeleteListeners(row);
+        });
+
+        // Load vehicles
+        const veiculosData = await loadFromDB('veiculos');
+        const vehiclesList = document.getElementById('vehiclesList');
+        vehiclesList.innerHTML = '';
+        veiculosData.forEach(v => {
+            const row = vehiclesList.insertRow();
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">${v.placa}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${v.marca}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${v.peso}</td>
+                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs ${getVehicleStateClass(v.estado)}">${v.estado}</span></td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${v.id}" data-type="veiculos"><i class="fas fa-edit"></i></button>
+                    <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${v.id}" data-type="veiculos"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            addEditDeleteListeners(row);
+        });
+
+        // Load destinations
+        const destinosData = await loadFromDB('destinos');
+        const destinationsList = document.getElementById('destinationsList');
+        const loadDestinationSelect = document.getElementById('loadDestination');
+        const editLoadDestinationSelect = document.getElementById('editLoadDestination');
+        
+        destinationsList.innerHTML = '';
+        // Clear existing options except the first one
+        loadDestinationSelect.innerHTML = '<option value="">Selecione o destino</option>';
+        editLoadDestinationSelect.innerHTML = '<option value="">Selecione o destino</option>';
+        
+        destinosData.forEach(d => {
+            const row = destinationsList.insertRow();
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">${d.destino}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${d.erp}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${d.entregas}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${d.pedidos}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${d.peso}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${d.id}" data-type="destinos"><i class="fas fa-edit"></i></button>
+                    <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${d.id}" data-type="destinos"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            addEditDeleteListeners(row);
+            
+            // Add option to load form select
+            const option = document.createElement('option');
+            option.value = d.id;
+            option.textContent = d.destino;
+            loadDestinationSelect.appendChild(option.cloneNode(true));
+            editLoadDestinationSelect.appendChild(option);
+        });
+
+        // Load loads
+        const cargasData = await loadFromDB('cargas');
+        const loadsList = document.getElementById('loadsList');
+        loadsList.innerHTML = '';
+        cargasData.forEach(c => {
+            const row = loadsList.insertRow();
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">${c.codigo}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${c.motorista}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${c.veiculo}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${c.destino}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${c.saida}</td>
+                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs ${getLoadStatusClass(c.status, c.veiculo)}">${c.status}</span>${getVehicleStatusIcon(c.veiculo)}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <button class="text-blue-600 hover:text-blue-800 mr-2 edit-btn" data-id="${c.id}" data-type="cargas"><i class="fas fa-edit"></i></button>
+                    <button class="text-red-600 hover:text-red-800 delete-btn" data-id="${c.id}" data-type="cargas"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            row.dataset.id = c.id;
+            addEditDeleteListeners(row);
+        });
+        
+        // Populate driver and vehicle select fields
+        const allPessoalData = await loadFromDB('pessoal');
+        const allVeiculosData = await loadFromDB('veiculos');
+        
+        const loadDriverSelect = document.getElementById('loadDriver');
+        const editLoadDriverSelect = document.getElementById('editLoadDriver');
+        const loadHelperSelect = document.getElementById('loadHelper');
+        const editLoadHelperSelect = document.getElementById('editLoadHelper');
+        const loadVehicleSelect = document.getElementById('loadVehicle');
+        const editLoadVehicleSelect = document.getElementById('editLoadVehicle');
+        
+        // Clear existing options except the first one
+        loadDriverSelect.innerHTML = '<option value="">Selecione o motorista</option>';
+        editLoadDriverSelect.innerHTML = '<option value="">Selecione o motorista</option>';
+        loadHelperSelect.innerHTML = '<option value="">Selecione o ajudante</option>';
+        editLoadHelperSelect.innerHTML = '<option value="">Selecione o ajudante</option>';
+        loadVehicleSelect.innerHTML = '<option value="">Selecione o veículo</option>';
+        editLoadVehicleSelect.innerHTML = '<option value="">Selecione o veículo</option>';
+        
+        // Filter personnel to only include drivers and helpers
+        const drivers = allPessoalData.filter(p => p.funcao === 'Motorista');
+        const helpers = allPessoalData.filter(p => p.funcao === 'Auxiliar');
+        
+        // Populate driver select fields
+        drivers.forEach(d => {
+            const option = document.createElement('option');
+            option.value = d.id;
+            option.textContent = d.nome;
+            
+            loadDriverSelect.appendChild(option.cloneNode(true));
+            editLoadDriverSelect.appendChild(option.cloneNode(true));
+        });
+        
+        // Populate helper select fields
+        helpers.forEach(h => {
+            const option = document.createElement('option');
+            option.value = h.id;
+            option.textContent = h.nome;
+            
+            loadHelperSelect.appendChild(option.cloneNode(true));
+            editLoadHelperSelect.appendChild(option.cloneNode(true));
+        });
+        
+        // Populate vehicle select fields
+        allVeiculosData.forEach(v => {
+            const option = document.createElement('option');
+            option.value = v.id;
+            option.textContent = `${v.placa} (${v.marca}, ${v.estado})`;
+            
+            loadVehicleSelect.appendChild(option.cloneNode(true));
+            editLoadVehicleSelect.appendChild(option.cloneNode(true));
+        });
+    } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+    }
+}
 
     // ====== Database Implementation (IndexedDB) ======
     const DB_NAME = 'ControleInternoDB';
@@ -1972,8 +2114,10 @@
                 
                 // Create dropdown menu
                 const dropdown = document.createElement('div');
-                dropdown.className = 'absolute z-10 hidden bg-white border border-gray-200 rounded-md shadow-lg mt-1';
+                dropdown.className = 'fixed z-50 bg-white border border-gray-200 rounded-md shadow-lg mt-1';
                 dropdown.style.minWidth = '160px';
+                dropdown.style.left = (statusSpan.getBoundingClientRect().left) + 'px';
+                dropdown.style.top = (statusSpan.getBoundingClientRect().bottom + window.scrollY) + 'px';
                 
                 // Status options
                 const statusOptions = ['Pendente', 'Em Trânsito', 'Entregue', 'Cancelada'];
@@ -2014,6 +2158,10 @@
                 // Make status span clickable
                 statusSpan.addEventListener('click', function(e) {
                     e.stopPropagation();
+                    // Atualize a posição do dropdown
+                    const rect = statusSpan.getBoundingClientRect();
+                    dropdown.style.left = rect.left + 'px';
+                    dropdown.style.top = (rect.bottom + window.scrollY) + 'px';
                     dropdown.classList.toggle('hidden');
                 });
                 
@@ -2053,6 +2201,7 @@
                         const statusCell = row.cells[5];
                         if (statusCell) {
                             statusCell.innerHTML = `<span class="px-2 py-1 rounded-full text-xs ${getLoadStatusClass(newStatus, loadData.veiculo)}">${newStatus}</span>${getVehicleStatusIcon(loadData.veiculo)}`;
+                            makeStatusEditable(); // <-- Adicione esta linha
                         }
                     }
                 }
@@ -2155,6 +2304,63 @@
             }, 0);
         }
     };
+    
     </script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script>
+// Botão para abrir o seletor de arquivo
+document.getElementById('importDestinosBtn').addEventListener('click', function() {
+    document.getElementById('importDestinosInput').click();
+});
+
+// Ao selecionar o arquivo
+document.getElementById('importDestinosInput').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(event) {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        // Procura os índices das colunas
+        const header = rows[0].map(h => h.toString().trim().toUpperCase());
+        const idxCargaERP = header.indexOf('CARGA ERP');
+        const idxPedido = header.indexOf('PEDIDO');
+        const idxPeso = header.indexOf('PESO (KG)');
+        const idxDestino = header.indexOf('DESTINO');
+
+        if (idxCargaERP === -1 || idxPedido === -1 || idxPeso === -1 || idxDestino === -1) {
+            alert('Colunas obrigatórias não encontradas na planilha.');
+            return;
+        }
+
+        // Importa cada linha
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row[idxDestino]) continue; // Pula linhas vazias
+
+            const destinoData = {
+                destino: row[idxDestino].toString().trim(),
+                erp: row[idxCargaERP] ? row[idxCargaERP].toString().trim() : '',
+                entregas: row[idxPedido] ? row[idxPedido].toString().trim() : '',
+                pedidos: row[idxPedido] ? row[idxPedido].toString().trim() : '',
+                peso: row[idxPeso] ? row[idxPeso].toString().trim() : '',
+                observacoes: ''
+            };
+
+            // Salva no IndexedDB
+            await saveToDB('destinos', destinoData);
+        }
+
+        alert('Importação concluída!');
+        await loadData();
+    };
+    reader.readAsArrayBuffer(file);
+});
+</script>
 </body>
 </html>
